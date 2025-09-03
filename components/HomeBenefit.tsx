@@ -16,21 +16,21 @@ const steps: Step[] = [
 export default function HomeBenefit() {
   return (
     <section className="w-full">
-       <h2 className='px-10 text-center text-4xl md:text-[54px] md:leading-[60px] font-bold tracking-tighter  text-golden-dark bg-clip-text mt-5'>
+       <h2 className='px-10 text-center py-10 text-4xl md:text-[54px] md:leading-[60px] font-bold tracking-tighter  text-golden-dark bg-clip-text mt-5'>
           How Kyve Escrow Works </h2>
-      <div className="flex px-10 py-10 flex-col gap-4 md:grid md:grid-cols-5 md:gap-6">
-        {steps.map((s, i) => (
+     <div className="px-10 py-10 grid gap-8 md:gap-10 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+           {steps.map((s, i) => (
           <div
   key={i}
   className="rounded-xl border border-gray-200 bg-white shadow-sm"
 >
-  <div className="relative w-full overflow-hidden rounded-xl">
+  <div className=" overflow-hidden rounded-xl inline-block">
     <Image
       src={s.src}
       alt={s.alt}
       width={800}      // set an intrinsic size to avoid layout shift
-      height={600}     // adjust to your typical ratio
-      className="h-full w-full object-cover"
+      height={900}     // adjust to your typical ratio
+      className=" object-cover"
       sizes="(max-width: 768px) 100vw, 20vw"
       priority={i === 0}
     />
