@@ -49,7 +49,7 @@ export const Navbar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   return (
-    <nav className="flex h-20 border-b justify-between   bg-white">
+    <nav className="flex h-20 border-b justify-between px-2  bg-white">
       <Link
         href={"/"}
         className="pl-4 md:pl-5 flex gap-4 md:gap-6 items-center"
