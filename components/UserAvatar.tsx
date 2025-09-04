@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogoutButton } from "@/components/auth/logout-button";
 import { LucidePanelLeftClose } from "lucide-react";
+import { signOut } from "next-auth/react";
 
 interface UserAvatarProps {
   user: {
@@ -19,6 +20,11 @@ interface UserAvatarProps {
 }
 
 export const UserAvatar = ({ user }: UserAvatarProps) => {
+  const handleLogout = async () => {
+    // Trigger client-side sign out and redirect to home (adjust if needed
+    await signOut({ callbackUrl: "/" });
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
@@ -33,7 +39,14 @@ export const UserAvatar = ({ user }: UserAvatarProps) => {
       <DropdownMenuContent className="w-48 p-2" align="end">
        
         <DropdownMenuItem asChild>
-          <LogoutButton> <LucidePanelLeftClose className="h-6 w-6 mr-2" /> Logout</LogoutButton>
+           <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full text-left p-4 flex items-center font-medium text-gray-800 hover:bg-primary hover:text-white text-base border-t"
+        >
+          <LucidePanelLeftClose className="h-6 w-6 mr-2" />
+          Logout
+        </button>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
