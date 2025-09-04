@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-import { useCurrentUser } from "@/lib/use-current-user"
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { LucidePanelLeftClose } from "lucide-react"
 import { LogoutButton } from "./auth/logout-button"
 import { Poppins } from "next/font/google"

@@ -8,6 +8,8 @@ import { useState } from "react"
 import { MenuIcon } from "lucide-react"
 import Image from "next/image"
 import { NavbarSidebar } from "./Navbar-Sidebar"
+import { UserAvatar } from "@/components/UserAvatar"
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 const poppins = Poppins({
   weight: ["700"],
@@ -30,6 +32,7 @@ const NavbarItems = [
 ]
 
 const NavbarItem = ({ href, children, isActive }: NavbarItemProps) => {
+   
   return (
     <Button
       asChild
@@ -47,6 +50,7 @@ const NavbarItem = ({ href, children, isActive }: NavbarItemProps) => {
 
 export const Navbar = () => {
   const pathname = usePathname()
+  const user = useCurrentUser(); 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
 
   return (
@@ -99,6 +103,10 @@ export const Navbar = () => {
       </div>
 
       <div className="hidden lg:flex">
+        {user ? (
+          <UserAvatar user={user} />
+        ) : (
+          <>
         <Button
           asChild
           variant="secondary"
@@ -112,6 +120,8 @@ export const Navbar = () => {
         >
           <Link href="/auth/register">Sign Up</Link>
         </Button>
+        </>
+        )}
       </div>
 
       <div className="flex lg:hidden items-center justify-center">
