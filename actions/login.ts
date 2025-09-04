@@ -10,9 +10,10 @@ import { getUserByEmail } from "@/data/user";
 import { getTwoFactorTokenByEmail } from "@/data/two-factor-token";
 import { db } from "@/lib/db";
 import { getTwoFactorConfirmationByUserId } from "@/data/two-factor-confirmation";
+import { revalidatePath } from "next/cache";
 
 export const Login = async (values: z.infer<typeof LoginSchema>, 
-  callbackUrl?: string | null ) => {
+  callbackUrl?: string | null, path: string = "/"  ) => {
     const validatedFields = LoginSchema.safeParse(values);
     if (!validatedFields.success) {
         return { error: "Invalid fields!"}; }
@@ -76,6 +77,7 @@ if (existingUser.isTwoFactorEnabled && existingUser.email) {
     password,
     redirectTo: callbackUrl || DEFAULT_LOGIN_REDIRECT,
   });
+   revalidatePath(path);
 } catch (error) {
   // Ignore Next.js internal redirect "error"
   if (error instanceof Error && error.message === "NEXT_REDIRECT") {
