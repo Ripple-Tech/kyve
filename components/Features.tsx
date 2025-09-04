@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Heading } from "./heading";
 
 export type FeatureItem = {
   id: string;
@@ -17,8 +18,8 @@ export const featuresData: FeatureItem[] = [
 const Features: React.FC = () => {
   return (
     <section className="w-full  bg-amber-200 px-0 py-10 mb-10 mt-10">
-        <h2 className='px-10 text-center py-4 mb-10 text-4xl md:text-[54px] md:leading-[60px] font-bold tracking-tighter  text-golden-dark bg-clip-text mt-5'>
-          Key Features </h2>
+        <Heading className="text-center mb-10">
+          Key Features </Heading>
       <div className="grid grid-cols-1 gap-10 px-10 sm:gap-12 md:grid-cols-2 lg:grid-cols-3">
         {featuresData.map((item) => (
           <div key={item.id} className="rounded-xl border border-stone-200 bg-white p-2 shadow-sm">

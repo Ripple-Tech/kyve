@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { Heading } from "./heading";
 
 type Step = {
   src: string;
@@ -16,8 +17,8 @@ const steps: Step[] = [
 export default function HomeBenefit() {
   return (
     <section className="w-full mb-20">
-       <h2 className='px-10 text-center py-10 text-4xl md:text-[54px] md:leading-[60px] font-bold tracking-tighter  text-golden-dark bg-clip-text mt-5'>
-          How Kyve Escrow Works </h2>
+       <Heading className="text-center mt-10">
+          How Kyve Escrow Works </Heading>
      <div className="px-10 py-10 grid gap-8 md:gap-10 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
            {steps.map((s, i) => (
           <div
