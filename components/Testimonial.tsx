@@ -21,11 +21,11 @@ const Testimonial = () => {
             {/* first customer review */}
             <div className="flex flex-auto flex-col gap-4 bg-brand-25 p-6 sm:p-8 lg:p-16 rounded-t-[2rem] lg:rounded-tr-none lg:rounded-l-[2rem]">
               <div className="flex gap-0.5 mb-2 justify-center lg:justify-start">
-                <Star className="size-5 text-brand-600 fill-[#6a4408]" />
-                <Star className="size-5 text-brand-600 fill-[#6a4408]" />
-                <Star className="size-5 text-brand-600 fill-[#6a4408]" />
-                <Star className="size-5 text-brand-600 fill-[#6a4408]" />
-                <Star className="size-5 text-brand-600 fill-[#6a4408]" />
+                <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
+                <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
+                <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
+                <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
+                <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
               </div>
 
               <p className="text-base sm:text-lg lg:text-lg/8 font-medium tracking-tight text-brand-950 text-center lg:text-left text-pretty">
@@ -53,11 +53,11 @@ const Testimonial = () => {
             {/* second customer review */}
             <div className="flex flex-auto flex-col gap-4 bg-brand-25 p-6 sm:p-8 lg:p-16 rounded-b-[2rem] lg:rounded-bl-none lg:rounded-r-[2rem]">
               <div className="flex gap-0.5 mb-2 justify-center lg:justify-start">
-                <Star className="size-5 text-brand-600 fill-[#6a4408]" />
-                <Star className="size-5 text-brand-600 fill-[#6a4408]" />
-                <Star className="size-5 text-brand-600 fill-[#6a4408]" />
-                <Star className="size-5 text-brand-600 fill-[#6a4408]" />
-                <Star className="size-5 text-brand-600 fill-[#6a4408]" />
+                <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
+                <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
+                <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
+                <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
+                <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
               </div>
 
               <p className="text-base sm:text-lg lg:text-lg/8 font-medium tracking-tight text-brand-950 text-center lg:text-left text-pretty">

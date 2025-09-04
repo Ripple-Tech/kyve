@@ -2,6 +2,7 @@ import Link from "next/link"
 import HeroForm from "./heroform"
 import { Button } from "./ui/button"
 import Image from "next/image"
+import { Star } from "lucide-react"
 
 const Hero = () => {
   return (
@@ -11,7 +12,7 @@ const Hero = () => {
         
      
    {/* Store buttons */}
-        <div className="flex flex-col gap-4 mt-8">
+        <div className="flex flex-col items-center justify-center gap-4 mt-8">
           <Image
             src="/playstore.png"
             alt="Get it on Google Play"
@@ -27,8 +28,17 @@ const Hero = () => {
             className="cursor-pointer"
           />
         </div>
+         <p className="font-semibold mt-4 text-center text-[15px] text-gray-800">Download Kyve App Today!</p>
       </div>
-
+      <div className="flex flex-auto flex-col gap-6 bg-brand-25 mt-0  lg:p-16 rounded-b-[2rem] lg:rounded-bl-none lg:rounded-r-[2rem]">
+                    <div className="flex gap-0.5 mb-1 justify-center lg:justify-start">
+                      <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
+                      <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
+                      <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
+                      <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
+                      <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
+                    </div>
+       </div>
       <div className="flex md:flex-1 py-10 px-3">
         <HeroForm />
       </div>
