@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation"
 import { useState } from "react"
 import { MenuIcon } from "lucide-react"
 import Image from "next/image"
+import { NavbarSidebar } from "./Navbar-Sidebar"
 
 const poppins = Poppins({
   weight: ["700"],
@@ -84,7 +85,7 @@ export const Navbar = () => {
           </span>
         </div>
       </Link>
-
+  <NavbarSidebar items={NavbarItems} open={isSidebarOpen} onOpenChange={setIsSidebarOpen}/>
       <div className="items-center hidden gap-4 pr-6 lg:flex">
         {NavbarItems.map((item) => (
           <NavbarItem

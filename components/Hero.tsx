@@ -29,8 +29,8 @@ const Hero = () => {
           />
         </div>
          <p className="font-semibold mt-4 text-center text-[15px] text-gray-800">Download Kyve App Today!</p>
-      </div>
-      <div className="flex flex-auto flex-col gap-6 bg-brand-25 mt-0  lg:p-16 rounded-b-[2rem] lg:rounded-bl-none lg:rounded-r-[2rem]">
+     
+          <div className="flex flex-auto flex-col py-5 items-center justify-center gap-6 bg-brand-25 mt-0  lg:p-16 rounded-b-[2rem] lg:rounded-bl-none lg:rounded-r-[2rem]">
                     <div className="flex gap-0.5 mb-1 justify-center lg:justify-start">
                       <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
                       <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
@@ -39,6 +39,8 @@ const Hero = () => {
                       <Star className="size-5 text-brand-600 fill-[#fb9e08]" />
                     </div>
        </div>
+      </div>
+     
       <div className="flex md:flex-1 py-10 px-3">
         <HeroForm />
       </div>

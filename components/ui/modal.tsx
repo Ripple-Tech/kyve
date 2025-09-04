@@ -1,6 +1,6 @@
 import { useMediaQuery } from "@/hooks/use-media-query"
 import { cn } from "@/lib/utils"
-import { Dispatch, ReactNode, SetStateAction } from "react"
+import { ReactNode } from "react"
 import { Drawer } from "vaul"
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
 
@@ -8,7 +8,8 @@ interface ModalProps {
   children?: ReactNode
   className?: string
   showModal?: boolean
-  setShowModal?: Dispatch<SetStateAction<boolean>>
+  // allow both a state setter or a simple function
+  setShowModal?: (value: boolean) => void
   onClose?: () => void
   desktopOnly?: boolean
   preventDefaultClose?: boolean
@@ -28,11 +29,8 @@ export const Modal = ({
       return
     }
 
-    onClose && onClose()
-
-    if (setShowModal) {
-      setShowModal(false)
-    }
+    onClose?.()
+    setShowModal?.(false)
   }
 
   const { isMobile } = useMediaQuery()
@@ -44,6 +42,8 @@ export const Modal = ({
         onOpenChange={(open) => {
           if (!open) {
             closeModal({ dragged: true })
+          } else {
+            setShowModal?.(open)
           }
         }}
       >
@@ -72,6 +72,8 @@ export const Modal = ({
       onOpenChange={(open) => {
         if (!open) {
           closeModal({ dragged: true })
+        } else {
+          setShowModal?.(open)
         }
       }}
     >
