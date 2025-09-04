@@ -6,10 +6,10 @@
 export const publicRoutes = [
     "/",
     "/auth/email-verification",
-     "/gallery",
-     "/subscriptions",
-     "/about-us",
-     "/contact-us",
+     "/seller",
+     "/buyer",
+     "/about",
+     "/help",
     "/terms",
     
     //"/search",
