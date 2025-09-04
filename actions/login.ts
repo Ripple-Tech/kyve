@@ -4,7 +4,7 @@ import { LoginSchema } from "@/schemas";
 import { signIn } from "@/auth";
 import { DEFAULT_LOGIN_REDIRECT } from "@/route";
 import { sendVerificationEmail, sendTwoFactorTokenEmail } from "@/lib/mail"
-import  AuthError  from "next-auth";
+import { AuthError }  from "next-auth";
 import { generateVerificationToken, generateTwoFactorToken } from "@/lib/tokens";
 import { getUserByEmail } from "@/data/user";
 import { getTwoFactorTokenByEmail } from "@/data/two-factor-token";
@@ -71,18 +71,24 @@ if (existingUser.isTwoFactorEnabled && existingUser.email) {
 } }
 
     try {
-      await signIn("credentials", {
-        email, password,
-        redirectTo: callbackUrl || DEFAULT_LOGIN_REDIRECT, 
-      })
-    } catch (error) {
-       if (error instanceof AuthError) {
-        switch (error) {
-            case "CredentialsSignin":
-                return {error: "Invalid credentials!"}
-            default: return { error: "Something went wrong!" }
-        }
-       }
-       throw error;
-    }
+  await signIn("credentials", {
+    email,
+    password,
+    redirectTo: callbackUrl || DEFAULT_LOGIN_REDIRECT,
+  });
+} catch (error) {
+  // Ignore Next.js internal redirect "error"
+  if (error instanceof Error && error.message === "NEXT_REDIRECT") {
+    throw error; // ✅ let Next.js handle redirect
+  }
+
+  if (error instanceof AuthError && error.type === "CredentialsSignin") {
+    return { error: "Invalid credentials!" };
+  }
+
+  // ✅ rethrow all other errors (don’t show "Something went wrong")
+  throw error;
+}
+
 }; 
+

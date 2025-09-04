@@ -4,9 +4,9 @@ import { cn } from "@/lib/utils"
 import Link from "next/link"
 import Image from "next/image"
 import { usePathname } from "next/navigation"
-//import { useCurrentUser } from "@/lib/use-current-user"
+import { useCurrentUser } from "@/lib/use-current-user"
 import { LucidePanelLeftClose } from "lucide-react"
-//import { LogoutButton } from "./auth/logout-button"
+import { LogoutButton } from "./auth/logout-button"
 import { Poppins } from "next/font/google"
 import { Modal } from "./ui/modal"
 import { Separator } from "./ui/separator"
@@ -30,7 +30,7 @@ interface Props {
 
 export const NavbarSidebar = ({ items, open, onOpenChange }: Props) => {
   const pathname = usePathname()
- // const user = useCurrentUser()
+  const user = useCurrentUser()
 
   return (
     <Modal showModal={open} setShowModal={onOpenChange}>
@@ -80,24 +80,9 @@ export const NavbarSidebar = ({ items, open, onOpenChange }: Props) => {
 
     <Separator className="mx-auto w-24 bg-black/10" />
 
-  <div className="border-t">
-          <Link
-            href="/auth/login"
-            onClick={() => onOpenChange(false)}
-            className="w-full text-left p-4 flex items-center font-medium text-gray-800 hover:bg-primary hover:text-white text-base"
-          >
-            Log In
-          </Link>
-          <Link
-            href="/auth/register"
-            onClick={() => onOpenChange(false)}
-            className="w-full text-left p-4 flex items-center font-medium text-gray-800 hover:bg-primary hover:text-white text-base"
-          >
-            Sign Up
-          </Link>
-        </div>
+ 
 
-      {/* Auth buttons
+      {/* Auth buttons */}
       {user ? (
         <div className="p-4 border-t" onClick={() => onOpenChange(false)}>
           <LogoutButton>
@@ -121,7 +106,7 @@ export const NavbarSidebar = ({ items, open, onOpenChange }: Props) => {
             Sign Up
           </Link>
         </div>
-      )}  */}
+      )}  
     </Modal>
   )
 }

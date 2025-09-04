@@ -13,7 +13,7 @@ import { FormError } from "@/components/forms/form-error"
 import { FormSuccess } from "@/components/forms/form-success"
 import { Login } from "@/actions/login"
 import { useState, useTransition } from "react"
-
+import { isRedirectError } from "next/dist/client/components/redirect-error"
 
 export const LoginForm = () => {
   const [showTwoFactor, setShowTwoFactor] = useState(false);
@@ -33,26 +33,34 @@ export const LoginForm = () => {
     });
     
   const onSubmit = (values: z.infer<typeof LoginSchema>) => {
-    setError("");
-    setSuccess("");
-    startTransition(() => {
-      Login(values, callbackUrl)
+  setError("");
+  setSuccess("");
+  startTransition(() => {
+    Login(values, callbackUrl)
       .then((data) => {
-          if (data?.error) {
-            form.reset();
-            setError(data?.error);
-          }
-          if (data?.success) {
-            form.reset();
-            setSuccess(data.success);
-           }
-          if (data?.twoFactor) {
-            setShowTwoFactor(true);
-          }    
-      }).catch(() => setError("Something went wrong"));
-    })
-   
-  }
+        if (data?.error) {
+          form.reset();
+          setError(data.error);
+        }
+        if (data?.success) {
+          form.reset();
+          setSuccess(data.success);
+        }
+        if (data?.twoFactor) {
+          setShowTwoFactor(true);
+        }
+      })
+      .catch((error) => {
+        // ✅ Ignore Next.js internal redirect error
+        if (isRedirectError(error)) {
+          return; // let Next.js redirect happen
+        }
+
+        // otherwise show fallback
+        setError("Something went wrong");
+      });
+  });
+};
 
     return (
         <CardWrapper 
