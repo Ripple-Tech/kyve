@@ -3,7 +3,7 @@
 import { db } from "@/lib/db"
 import getCurrentUser from "@/actions/getCurrentUser"
 
-export async function getUserEscrows() {
+export async function getUserEscrows(id: string) {
   const sessionUser = await getCurrentUser()
   if (!sessionUser?.id) {
     throw new Error("Unauthorized")
