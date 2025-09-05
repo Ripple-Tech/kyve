@@ -1,22 +1,23 @@
-// app/(dashboard)/dashboard/page.js
-import { getUserEscrows } from "@/actions/get-user-escrow"
-import { EscrowGrid } from "@/app/(dashboard)/dashboard/escrow-grid"
-import { DashboardPage } from "@/components/dashboard-page"
-import { getSession } from "next-auth/react"
+// app/(dashboard)/dashboard/page.tsx
+import { getUserEscrows } from "@/actions/get-user-escrow";
+import { EscrowGrid } from "@/app/(dashboard)/dashboard/escrow-grid";
+import { DashboardPage } from "@/components/dashboard-page";
+import { useSession } from "next-auth/react";
 
 export default async function Page() {
-  const session = await getSession()
-  
+ const { data: session, status } = useSession();
+  // Check for session and redirect if unauthorized
   if (!session) {
-    // Handle unauthorized access
-    return { redirect: { destination: '/login', permanent: false } }
+    return ;
   }
 
-  const escrows = await getUserEscrows(session.user.id) // pass user ID if needed
+  // Fetch the user's escrows
+  const escrows = await getUserEscrows(session.user.id);
 
+  // Render the dashboard page with fetched data
   return (
     <DashboardPage title="Your Escrows">
       <EscrowGrid initialEscrows={escrows} />
     </DashboardPage>
-  )
+  );
 }
