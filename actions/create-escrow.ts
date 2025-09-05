@@ -39,9 +39,7 @@ export async function createEscrowAction(raw: unknown) {
 
   // 5) Generate a share token and URL
   const shareToken = crypto.randomUUID()
-  const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
   const shareUrl = `${baseUrl}/escrow/${shareToken}`
 
   // 6) Prefill buyer/seller based on role
