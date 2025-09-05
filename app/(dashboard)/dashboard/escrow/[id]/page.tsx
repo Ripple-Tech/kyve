@@ -8,14 +8,14 @@ interface EscrowDetailPageProps {
   params: { id: string }
 }
 
-export default async function EscrowDetailPage({ params }: EscrowDetailPageProps) {
+export default async function EscrowDetailPage({ params }: { params: Promise<EscrowDetailPageProps> }) {
   const awaitedParam = await params
   const sessionUser = await getCurrentUser()
   if (!sessionUser?.id) return notFound()
  
   
   const escrow = await db.escrow.findUnique({
-    where: { id: awaitedParam.id },
+    where: { id: awaitedParam.params.id },
     include: {
       buyer: { select: { id: true, name: true, email: true } },
       seller: { select: { id: true, name: true, email: true } },
