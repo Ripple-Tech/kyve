@@ -1,7 +1,7 @@
 import { db } from "@/lib/db"
 import { DashboardPage } from "@/components/dashboard-page"
 import { EscrowDetail } from "@/app/(dashboard)/dashboard/escrow-detail"
-import getCurrentUser from "@/actions/getCurrentUser"
+import { useSession } from "next-auth/react"
 
 interface EscrowDetailPageProps {
   params: { id: string }
@@ -9,8 +9,9 @@ interface EscrowDetailPageProps {
 
 export default async function EscrowDetailPage({ params }: { params: Promise<EscrowDetailPageProps> }) {
   const awaitedParam = await params
-  const sessionUser = await getCurrentUser()
-  if (!sessionUser?.id) return;
+ const { data: session, status } = useSession();
+  const sessionUser = session?.user;
+  if (!sessionUser?.id) return ;
  
   
   const escrow = await db.escrow.findUnique({
