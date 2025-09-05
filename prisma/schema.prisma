@@ -44,6 +44,10 @@ model User {
   image         String?
   password      String?
   role          UserRole @default(USER)
+  // Relations (optional; keep what you need)
+  createdEscrows  Escrow[] @relation("CreatorEscrows")
+  buyerEscrows    Escrow[] @relation("BuyerEscrows")
+  sellerEscrows   Escrow[] @relation("SellerEscrows")
   accounts      Account[]
   isTwoFactorEnabled Boolean @default(false)
   twoFactorConfirmation TwoFactorConfirmation? 
@@ -84,3 +88,63 @@ model TwoFactorConfirmation {
  @@unique([userId])
 
 }
+
+
+enum EscrowStatus {
+  PENDING
+  RELEASED
+  CANCELLED
+}
+
+enum EscrowRole {
+  BUYER
+  SELLER
+}
+
+enum LogisticsOption {
+  NO
+  PICKUP
+  DELIVERY
+}
+
+enum Currency {
+  NGN
+  USD
+  GHS
+}
+
+
+model Escrow {
+  id          String          @id @default(auto()) @map("_id") @db.ObjectId
+
+  // Business fields
+  role        EscrowRole
+  category    String
+  logistics   LogisticsOption
+  amount      Float
+  currency    Currency
+  status      EscrowStatus    @default(PENDING)
+
+  // Link generation
+  shareToken  String          @unique
+  shareUrl    String
+
+  // Creator (required)
+  creator     User            @relation("CreatorEscrows", fields: [creatorId], references: [id])
+  creatorId   String          @db.ObjectId
+
+  // Optional participants until connected
+  buyer       User?           @relation("BuyerEscrows", fields: [buyerId], references: [id])
+  buyerId     String?         @db.ObjectId
+
+  seller      User?           @relation("SellerEscrows", fields: [sellerId], references: [id])
+  sellerId    String?         @db.ObjectId
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([creatorId])
+  @@index([buyerId])
+  @@index([sellerId])
+}
+

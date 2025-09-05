@@ -25,10 +25,11 @@ interface NavbarItemProps {
 
 const NavbarItems = [
   { children: "Home", href: "/" },
+  { children: "Dashboard", href: "/dashboard" },
   { children: "About", href: "/about" },
   { children: "Buyers", href: "/buyers" },
   { children: "Sellers", href: "/sellers" },
-  { children: "Help", href: "/help" },
+  
 ]
 
 const NavbarItem = ({ href, children, isActive }: NavbarItemProps) => {
