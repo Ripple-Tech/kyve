@@ -1,5 +1,4 @@
 import { db } from "@/lib/db"
-import { notFound } from "next/navigation"
 import { DashboardPage } from "@/components/dashboard-page"
 import { EscrowDetail } from "@/app/(dashboard)/dashboard/escrow-detail"
 import getCurrentUser from "@/actions/getCurrentUser"
@@ -11,7 +10,7 @@ interface EscrowDetailPageProps {
 export default async function EscrowDetailPage({ params }: { params: Promise<EscrowDetailPageProps> }) {
   const awaitedParam = await params
   const sessionUser = await getCurrentUser()
-  if (!sessionUser?.id) return notFound()
+  if (!sessionUser?.id) return;
  
   
   const escrow = await db.escrow.findUnique({
@@ -22,14 +21,14 @@ export default async function EscrowDetailPage({ params }: { params: Promise<Esc
     },
   })
 
-  if (!escrow) return notFound()
+  if (!escrow) return;
 
   if (
     escrow.creatorId !== sessionUser.id &&
     escrow.buyerId !== sessionUser.id &&
     escrow.sellerId !== sessionUser.id
   ) {
-    return notFound()
+    return ;
   }
 
   return (
