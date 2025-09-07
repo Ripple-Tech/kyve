@@ -28,7 +28,7 @@ export const DashboardPage = ({
           <div className="flex items-center gap-8">
             {hideBackButton ? null : (
               <Button
-                onClick={() => router.push("/dashboard")}
+                onClick={() => router.replace("/dashboard")}
                 className="w-fit bg-white"
                 variant="outline"
               >

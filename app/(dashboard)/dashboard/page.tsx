@@ -14,7 +14,7 @@ export default async function Page() {
 
   // Render the dashboard page with fetched data
   return (
-    <DashboardPage title="Your Escrows">
+    <DashboardPage title="Your Escrows" hideBackButton={true}>
       <EscrowGrid initialEscrows={escrows} />
     </DashboardPage>
   );
