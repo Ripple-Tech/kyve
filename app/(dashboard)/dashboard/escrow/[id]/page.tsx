@@ -1,30 +1,52 @@
-import { db } from "@/lib/db";
-import { DashboardPage } from "@/components/dashboard-page";
-import { EscrowDetail } from "@/app/(dashboard)/dashboard/escrow-detail";
+import { db } from "@/lib/db"
+import { DashboardPage } from "@/components/dashboard-page"
+import { Hydrate } from "@/components/hydrate-client"
+import { QueryClient, dehydrate } from "@tanstack/react-query"
+import { EscrowDetailClient } from "./escrow-detail.client"
 
 interface EscrowDetailPageProps {
-  params: Promise<{ id: string }>; // Change to Promise type
+  // params is async in Next.js 15 dynamic routes
+  params: Promise<{ id: string }>
 }
 
-export default async function EscrowDetailPage({ params }: EscrowDetailPageProps) {
-  const awaitedParams = await params; // Await params to access its properties
-  
+async function prefetchEscrow(qc: QueryClient, id: string) {
+  const exists = await db.escrow.findUnique({
+    where: { id },
+    select: { id: true },
+  })
+  if (!exists) return null
+
   const escrow = await db.escrow.findUnique({
-    where: { id: awaitedParams.id }, // Now you can safely access awaitedParams.id
+    where: { id },
     include: {
       buyer: { select: { id: true, name: true, email: true } },
       seller: { select: { id: true, name: true, email: true } },
     },
-  });
+  })
 
-  if (!escrow) {
-    // Handle the case where escrow is not found (e.g., return a not found page)
-    return null; // or return a 404 page
+  if (escrow) {
+    // Must match the tRPC query key used by trpc.escrow.getById.useQuery({ id })
+    // Default @trpc/react-query key: ["escrow.getById", { id }]
+    qc.setQueryData(["escrow.getById", { id }], escrow)
   }
+
+  return dehydrate(qc)
+}
+
+export default async function EscrowDetailPage({ params }: EscrowDetailPageProps) {
+  // IMPORTANT: Await params before using its properties (Next.js 15 async dynamic APIs)
+  const awaitedParams = await params
+  const id = awaitedParams.id
+
+  const qc = new QueryClient()
+  const state = await prefetchEscrow(qc, id)
+  if (!state) return null // or notFound()
 
   return (
     <DashboardPage title="Escrow Details">
-      <EscrowDetail escrow={escrow} />
+      <Hydrate state={state}>
+        <EscrowDetailClient id={id} />
+      </Hydrate>
     </DashboardPage>
-  );
+  )
 }

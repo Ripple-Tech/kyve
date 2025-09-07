@@ -5,7 +5,7 @@ import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useTransition, useState } from "react";
-
+import { trpc } from "@/lib/trpc/client"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -56,25 +56,23 @@ export default function HeroForm() {
   const [success, setSuccess] = useState<string | undefined>("");
 
   const [isPending, startTransition] = useTransition();
+const createEscrow = trpc.escrow.createEscrow.useMutation()
 
   const onSubmit = (values: FormValues) => {
     setError("");
     setSuccess("");
 
-    startTransition(async () => {
-      try {
-        const res = await createEscrowAction(values);
-
-        if (res?.success) {
-          setSuccess("Escrow created successfully!");
-          form.reset();
-        } else {
-          setError("Failed to create escrow.");
-        }
-      } catch (err: any) {
-        console.error(err);
-        setError(err.message || "Something went wrong.");
-      }
+    startTransition(() => {
+      createEscrow.mutate(values, {
+        onSuccess: () => {
+          setSuccess("Escrow created successfully!")
+          form.reset()
+        },
+        onError: (err) => {
+          console.error(err)
+          setError(err.message || "Something went wrong.")
+        },
+      })
     });
   };
 
