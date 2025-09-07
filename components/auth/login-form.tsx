@@ -29,7 +29,7 @@ export const LoginForm = () => {
   const [success, setSuccess] = useState<string | undefined>("");
   const [isPending, startTransition] = useTransition();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
+ const callbackUrl = '/dashboard'; 
 
   const urlError =
     searchParams.get("error") === "OAuthAccountNotLinked"
@@ -57,7 +57,7 @@ export const LoginForm = () => {
         password: values.password,
         // If you need to handle 2FA code, include it in your credentials provider authorize.
         code: values.code,
-        redirect: true,
+        redirect: true, // always redirect after sign in
         callbackUrl, // will navigate and refresh the app tree
       });
 
