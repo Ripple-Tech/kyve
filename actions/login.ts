@@ -75,7 +75,7 @@ if (existingUser.isTwoFactorEnabled && existingUser.email) {
   await signIn("credentials", {
     email,
     password,
-    redirectTo: callbackUrl || DEFAULT_LOGIN_REDIRECT,
+    redirectTo: "/dashboard",
   });
    revalidatePath(path);
 } catch (error) {
