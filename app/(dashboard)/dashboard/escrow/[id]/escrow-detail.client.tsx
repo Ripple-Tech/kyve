@@ -15,8 +15,6 @@ export function EscrowDetailClient({ id }: { id: string }) {
       staleTime: 30_000,
       refetchOnMount: false,
       retry: (failureCount, error) => {
-        // If server forbids access before acceptance, we don’t want to keep retrying
-        // Customize if your error shape differs
         const code = (error as any)?.data?.code
         if (code === "FORBIDDEN" || code === "UNAUTHORIZED") return false
         return failureCount < 2
@@ -24,19 +22,28 @@ export function EscrowDetailClient({ id }: { id: string }) {
     }
   )
 
+  const [showMinimalAccept, setShowMinimalAccept] = useState(false)
+
   const accept = trpc.escrow.acceptInvitation.useMutation({
     onSuccess: async () => {
+      // ✅ reset fallback UI
+      setShowMinimalAccept(false)
+
+      // ✅ refresh queries
       await Promise.all([
         utils.escrow.getById.invalidate({ id }),
         utils.escrow.listMine.invalidate(),
       ])
+
+      // ✅ also force refetch immediately
+      getQuery.refetch()
+
+      // (optional) hard revalidate the page
       router.refresh()
     },
   })
 
-  // Optional: if getById is forbidden for invited user before accept,
-  // you can try showing a lightweight accept UI by probing once
-  const [showMinimalAccept, setShowMinimalAccept] = useState(false)
+  // Detect if escrow is forbidden → fallback UI
   useEffect(() => {
     const code = (getQuery.error as any)?.data?.code
     if (getQuery.isError && (code === "FORBIDDEN" || code === "UNAUTHORIZED")) {
@@ -44,7 +51,6 @@ export function EscrowDetailClient({ id }: { id: string }) {
     }
   }, [getQuery.isError, getQuery.error])
 
-  // Minimal accept-only fallback (when getById is forbidden for invitee)
   if (showMinimalAccept) {
     return (
       <div className="max-w-xl mx-auto bg-white shadow rounded-lg p-6 space-y-4">
@@ -71,15 +77,10 @@ export function EscrowDetailClient({ id }: { id: string }) {
 
   const escrow = getQuery.data as any
 
-  // Determine if current user should see the Accept button (invite still pending and their side not set)
   const needsJoin =
     escrow.invitationStatus === "PENDING" &&
     ((escrow.invitedRole === "BUYER" && !escrow.buyerId) ||
-     (escrow.invitedRole === "SELLER" && !escrow.sellerId))
-
-   // const needsJoin =
-   // escrow.invitationStatus === "PENDING" &&
-  // (!escrow.buyerId || !escrow.sellerId)
+      (escrow.invitedRole === "SELLER" && !escrow.sellerId))
 
   return (
     <div className="space-y-4">
@@ -112,3 +113,4 @@ export function EscrowDetailClient({ id }: { id: string }) {
     </div>
   )
 }
+
