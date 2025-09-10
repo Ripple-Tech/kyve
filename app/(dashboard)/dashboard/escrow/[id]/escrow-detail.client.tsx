@@ -122,7 +122,7 @@ const displayRole = isCreator
         </div>
       ) : null}
 
-      <EscrowDetail escrow={escrow} displayRole={displayRole} />
+      <EscrowDetail escrow={escrow} displayRole={displayRole} isCreator={isCreator} />
     </div>
   )
 }
