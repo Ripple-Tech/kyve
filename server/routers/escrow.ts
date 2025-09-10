@@ -7,22 +7,18 @@ const roleMap = { buyer: "BUYER", seller: "SELLER" } as const
 const logisticsMap = { no: "NO", pickup: "PICKUP", delivery: "DELIVERY" } as const
 
 export const escrowRouter = router({
-  // Create an escrow (unchanged)
+  // Create an escrow; share URL = /escrow/:id after creation
   createEscrow: protectedProcedure
     .input(EscrowFormSchema)
     .mutation(async ({ ctx, input }) => {
       const { db, user } = ctx
       const amountNumber = Number(input.amount.replaceAll(",", ""))
-      const shareToken = crypto.randomUUID()
-      const baseUrl =
-        process.env.NEXT_PUBLIC_APP_URL ??
-        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
-      const shareUrl = `${baseUrl}/escrow/${shareToken}`
 
-      let buyerId: string | undefined
-      let sellerId: string | undefined
-      if (input.role === "buyer") buyerId = user!.id
-      else sellerId = user!.id
+      // Keep initial role setup as before (creator picks role)
+      const creatorIsBuyer = input.role === "buyer"
+      const buyerId = creatorIsBuyer ? user!.id : undefined
+      const sellerId = creatorIsBuyer ? undefined : user!.id
+      const invitedRole = creatorIsBuyer ? "SELLER" : "BUYER" as const
 
       const escrow = await db.escrow.create({
         data: {
@@ -32,24 +28,114 @@ export const escrowRouter = router({
           amount: amountNumber,
           currency: input.currency as any,
           status: "PENDING",
-          shareToken,
-          shareUrl,
           creatorId: user!.id,
           buyerId,
           sellerId,
+          invitedRole, // informational for now
+          invitationStatus: "PENDING",
         },
         select: {
           id: true,
-          shareToken: true,
-          shareUrl: true,
           status: true,
+          invitedRole: true,
+          buyerId: true,
+          sellerId: true,
+          creatorId: true,
         },
       })
 
-      return escrow
+      // Build share link with id
+      const baseUrl =
+        process.env.NEXT_PUBLIC_APP_URL ??
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
+      const shareUrl = `${baseUrl}/escrow/${escrow.id}`
+
+      return { ...escrow, shareUrl }
     }),
 
-  // Get one escrow by id (for the detail page)
+  // TEMPORARY permissive accept:
+  // - Only restriction: creator cannot accept their own escrow
+  // - Any other signed-in user can accept.
+  // - Attach them to the first open side (buyer or seller). If both filled, just mark ACCEPTED.
+  acceptInvitation: protectedProcedure
+    .input(z.object({ escrowId: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const { db, user } = ctx
+
+      const escrow = await db.escrow.findUnique({
+        where: { id: input.escrowId },
+        select: {
+          id: true,
+          invitedRole: true,
+          invitationStatus: true,
+          buyerId: true,
+          sellerId: true,
+          creatorId: true,
+        },
+      })
+
+      if (!escrow) throw new TRPCError({ code: "NOT_FOUND", message: "Escrow not found" })
+
+      // The only restriction we keep:
+      if (escrow.creatorId === user!.id) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Creator cannot accept own escrow" })
+      }
+
+      // If user already a participant, mark accepted and return
+      if (escrow.buyerId === user!.id || escrow.sellerId === user!.id) {
+        await db.escrow.update({
+          where: { id: input.escrowId },
+          data: { invitationStatus: "ACCEPTED" },
+        })
+        return { success: true, escrowId: escrow.id }
+      }
+
+      // Attach user to whichever side is empty; prefer seller if both empty
+      const needsBuyer = !escrow.buyerId
+      const needsSeller = !escrow.sellerId
+
+      if (needsSeller) {
+        await db.escrow.update({
+          where: { id: input.escrowId },
+          data: {
+            sellerId: user!.id,
+            invitationStatus: "ACCEPTED",
+          },
+        })
+      } else if (needsBuyer) {
+        await db.escrow.update({
+          where: { id: input.escrowId },
+          data: {
+            buyerId: user!.id,
+            invitationStatus: "ACCEPTED",
+          },
+        })
+      } else {
+        // Both already set; just mark accepted idempotently
+        await db.escrow.update({
+          where: { id: input.escrowId },
+          data: { invitationStatus: "ACCEPTED" },
+        })
+      }
+
+      return { success: true, escrowId: escrow.id }
+    }),
+
+  // Decline invitation (kept)
+  declineInvitation: protectedProcedure
+    .input(z.object({ escrowId: z.string().min(1) }))
+    .mutation(async ({ ctx, input }) => {
+      const { db } = ctx
+      await db.escrow.update({
+        where: { id: input.escrowId },
+        data: { invitationStatus: "DECLINED" },
+      })
+      return { success: true }
+    }),
+
+  // TEMPORARY relaxed detail access:
+  // - Before anyone accepts: only creator/assigned participants can view
+  // - After accepted: allow any authenticated user to view (very open, per your request)
   getById: protectedProcedure
     .input(z.object({ id: z.string().min(1) }))
     .query(async ({ ctx, input }) => {
@@ -67,19 +153,22 @@ export const escrowRouter = router({
         throw new TRPCError({ code: "NOT_FOUND", message: "Escrow not found" })
       }
 
-      // Optional authorization check: only participants or creator can view
-      if (
-        escrow.creatorId !== user!.id &&
-        escrow.buyerId !== user!.id &&
-        escrow.sellerId !== user!.id
-      ) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Not allowed to view this escrow" })
+      const isParticipant =
+        escrow.creatorId === user!.id ||
+        escrow.buyerId === user!.id ||
+        escrow.sellerId === user!.id
+
+      // If someone has accepted, let any signed-in user view (temporary)
+      const accepted = escrow.invitationStatus === "ACCEPTED"
+
+      if (!isParticipant && !accepted) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not allowed (temporary gate)" })
       }
 
       return escrow
     }),
 
-  // Optional: list escrows for the current user (for dashboard)
+  // Dashboard list remains: only your own items
   listMine: protectedProcedure
     .input(
       z

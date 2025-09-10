@@ -89,6 +89,12 @@ model TwoFactorConfirmation {
 
 }
 
+enum EscrowInvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
 
 enum EscrowStatus {
   PENDING
@@ -125,9 +131,9 @@ model Escrow {
   currency    Currency
   status      EscrowStatus    @default(PENDING)
 
-  // Link generation
-  shareToken  String          @unique
-  shareUrl    String
+   // Invitation flow
+  invitedRole       EscrowRole?
+  invitationStatus  EscrowInvitationStatus @default(PENDING)
 
   // Creator (required)
   creator     User            @relation("CreatorEscrows", fields: [creatorId], references: [id])
@@ -147,4 +153,6 @@ model Escrow {
   @@index([buyerId])
   @@index([sellerId])
 }
+
+
 
