@@ -4,11 +4,13 @@ import { trpc } from "@/lib/trpc/client"
 import { EscrowDetail } from "@/app/(dashboard)/dashboard/escrow-detail"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 
 export function EscrowDetailClient({ id }: { id: string }) {
   const utils = trpc.useUtils()
   const router = useRouter()
-
+const { data: session } = useSession()
+const currentUserId = session?.user?.id
   const getQuery = trpc.escrow.getById.useQuery(
     { id },
     {
@@ -76,8 +78,10 @@ export function EscrowDetailClient({ id }: { id: string }) {
   if (getQuery.isError || !getQuery.data) return <div>Unable to load escrow.</div>
 
   const escrow = getQuery.data as any
+const isCreator = escrow.creatorId === currentUserId
 
   const needsJoin =
+  !isCreator &&
     escrow.invitationStatus === "PENDING" &&
     ((escrow.invitedRole === "BUYER" && !escrow.buyerId) ||
       (escrow.invitedRole === "SELLER" && !escrow.sellerId))
