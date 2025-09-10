@@ -1,30 +1,30 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { trpc } from "@/lib/trpc/client"
 import { EscrowCard } from "./escrow-card"
 import { EscrowEmpty } from "./escrow-empty"
 import { Modal } from "@/components/ui/modal"
 import { Button } from "@/components/ui/button"
-import { deleteEscrowAction } from "@/actions/delete-escrow"
 import { FormError } from "@/components/forms/form-error"
 import { LoadingSpinner } from "@/components/loading-spinner"
+import { useState, useTransition } from "react"
+import { deleteEscrowAction } from "@/actions/delete-escrow"
 
-interface EscrowGridProps {
-  initialEscrows: any[]
-}
-
-export function EscrowGrid({ initialEscrows }: EscrowGridProps) {
-  const [escrows, setEscrows] = useState(initialEscrows)
+export function EscrowGridClient() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [error, setError] = useState<string | undefined>()
   const [isPending, startTransition] = useTransition()
 
-  if (!escrows || escrows.length === 0) {
-    return <EscrowEmpty />
-  }
+  const utils = trpc.useUtils()
 
-  const handleDelete = (id: string) => {
-    setDeletingId(id)
+  const escrowsQuery = trpc.escrow.listMine.useQuery(
+    { limit: 20 },
+    { staleTime: 30_000 }
+  )
+
+  if (escrowsQuery.isLoading) return <div>Loading escrows…</div>
+  if (!escrowsQuery.data || escrowsQuery.data.items.length === 0) {
+    return <EscrowEmpty />
   }
 
   const confirmDelete = () => {
@@ -32,7 +32,7 @@ export function EscrowGrid({ initialEscrows }: EscrowGridProps) {
     startTransition(async () => {
       try {
         await deleteEscrowAction(deletingId)
-        setEscrows((prev) => prev.filter((e) => e.id !== deletingId))
+        await utils.escrow.listMine.invalidate({ limit: 20 }) // 🔁 refresh
         setDeletingId(null)
       } catch (e: any) {
         setError("Unable to delete escrow")
@@ -43,8 +43,8 @@ export function EscrowGrid({ initialEscrows }: EscrowGridProps) {
   return (
     <>
       <ul className="grid max-w-6xl grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {escrows.map((escrow) => (
-          <EscrowCard key={escrow.id} escrow={escrow} onDelete={handleDelete} />
+        {escrowsQuery.data.items.map((escrow) => (
+          <EscrowCard key={escrow.id} escrow={escrow} onDelete={setDeletingId} />
         ))}
       </ul>
 

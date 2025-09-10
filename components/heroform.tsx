@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 
 import { FormError } from "@/components/forms/form-error";
 import { FormSuccess } from "@/components/forms/form-success";
+import { useRouter } from "next/navigation";
 
 //import { createEscrowAction } from "@/actions/create-escrow";
 
@@ -39,7 +40,8 @@ const FormSchema = z.object({
 
 type FormValues = z.infer<typeof FormSchema>;
 
-export default function HeroForm() {
+export default function HeroForm({ inDashboard = false }: { inDashboard?: boolean }) {
+const utils = trpc.useUtils()
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
     defaultValues: {
@@ -54,7 +56,7 @@ export default function HeroForm() {
 
   const [error, setError] = useState<string | undefined>("");
   const [success, setSuccess] = useState<string | undefined>("");
-
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
 const createEscrow = trpc.escrow.createEscrow.useMutation()
 
@@ -64,9 +66,16 @@ const createEscrow = trpc.escrow.createEscrow.useMutation()
 
     startTransition(() => {
       createEscrow.mutate(values, {
-        onSuccess: () => {
+        onSuccess: async () => {
           setSuccess("Escrow created successfully!")
           form.reset()
+         
+        if (inDashboard) {
+         await utils.escrow.listMine.invalidate({ limit: 20 }) // 🔁 refresh dashboard list
+} else {
+  router.push("/dashboard")
+}
+
         },
         onError: (err) => {
           console.error(err)

@@ -13,7 +13,7 @@ interface EscrowCardProps {
     amount: number
     currency: string
     status: string
-    createdAt: string
+    createdAt: Date
   }
   onDelete: (id: string) => void
 }
