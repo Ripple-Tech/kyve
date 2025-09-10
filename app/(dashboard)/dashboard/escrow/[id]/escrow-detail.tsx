@@ -2,9 +2,10 @@ import { format } from "date-fns"
 
 interface EscrowDetailProps {
   escrow: any
+  displayRole: string
 }
 
-export function EscrowDetail({ escrow }: EscrowDetailProps) {
+export function EscrowDetail({ escrow, displayRole }: EscrowDetailProps) {
   return (
     <div className="max-w-3xl mx-auto bg-white shadow rounded-lg p-6 space-y-4">
       <h2 className="text-2xl font-bold">Escrow Details</h2>
@@ -17,7 +18,7 @@ export function EscrowDetail({ escrow }: EscrowDetailProps) {
         </div>
         <div className="py-2 flex justify-between">
           <span className="font-medium">Role</span>
-          <span>{escrow.role}</span>
+          <span>{displayRole}</span>
         </div>
         <div className="py-2 flex justify-between">
           <span className="font-medium">Amount</span>

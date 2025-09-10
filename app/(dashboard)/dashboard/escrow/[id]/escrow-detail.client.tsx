@@ -1,7 +1,7 @@
 "use client"
 
 import { trpc } from "@/lib/trpc/client"
-import { EscrowDetail } from "@/app/(dashboard)/dashboard/escrow-detail"
+import { EscrowDetail } from "@/app/(dashboard)/dashboard/escrow/[id]/escrow-detail"
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
@@ -80,11 +80,20 @@ const currentUserId = session?.user?.id
   const escrow = getQuery.data as any
 const isCreator = escrow.creatorId === currentUserId
 
+// Decide what role to display
+const displayRole = isCreator
+  ? escrow.role
+  : escrow.role === "BUYER"
+    ? "SELLER"
+    : "BUYER"
+
   const needsJoin =
   !isCreator &&
     escrow.invitationStatus === "PENDING" &&
     ((escrow.invitedRole === "BUYER" && !escrow.buyerId) ||
       (escrow.invitedRole === "SELLER" && !escrow.sellerId))
+
+      
 
   return (
     <div className="space-y-4">
@@ -113,7 +122,7 @@ const isCreator = escrow.creatorId === currentUserId
         </div>
       ) : null}
 
-      <EscrowDetail escrow={escrow} />
+      <EscrowDetail escrow={escrow} displayRole={displayRole} />
     </div>
   )
 }
