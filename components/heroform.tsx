@@ -40,7 +40,7 @@ const FormSchema = z.object({
 
 type FormValues = z.infer<typeof FormSchema>;
 
-export default function HeroForm({ inDashboard = false, onSuccess }: { inDashboard?: boolean, onSuccess: () => void }) {
+export default function HeroForm({ inDashboard = false, onSuccess }: { inDashboard?: boolean, onSuccess?: () => void }) {
 const utils = trpc.useUtils()
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
