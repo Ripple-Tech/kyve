@@ -40,7 +40,7 @@ const FormSchema = z.object({
 
 type FormValues = z.infer<typeof FormSchema>;
 
-export default function HeroForm({ inDashboard = false }: { inDashboard?: boolean }) {
+export default function HeroForm({ inDashboard = false, onSuccess }: { inDashboard?: boolean, onSuccess: () => void }) {
 const utils = trpc.useUtils()
   const form = useForm<FormValues>({
     resolver: zodResolver(FormSchema),
@@ -71,7 +71,8 @@ const createEscrow = trpc.escrow.createEscrow.useMutation()
           form.reset()
          
         if (inDashboard) {
-         await utils.escrow.listMine.invalidate({ limit: 20 }) // 🔁 refresh dashboard list
+         await utils.escrow.listMine.invalidate({ limit: 20 }) 
+         onSuccess?.()
 } else {
   router.push("/dashboard")
 }

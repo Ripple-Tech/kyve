@@ -35,7 +35,7 @@ export default async function Page() {
   const state = await prefetchEscrows(qc, user.id)
 
   return (
-    <DashboardPage title="Your Escrows" hideBackButton>
+    <DashboardPage title="Your Escrows" hideBackButton showCreate>
       <Hydrate state={state}>
         <EscrowGridClient />
       </Hydrate>
