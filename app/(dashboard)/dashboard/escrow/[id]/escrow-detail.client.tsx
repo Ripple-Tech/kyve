@@ -5,6 +5,7 @@ import { EscrowDetail } from "@/app/(dashboard)/dashboard/escrow/[id]/escrow-det
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
+import EscrowCompleteEmptyState from "./EmptyEscrow"
 
 export function EscrowDetailClient({ id }: { id: string }) {
   const utils = trpc.useUtils()
@@ -76,9 +77,23 @@ const currentUserId = session?.user?.id
 
   if (getQuery.isLoading) return <div>Loading escrow…</div>
   if (getQuery.isError || !getQuery.data) return <div>Unable to load escrow.</div>
+  if (getQuery.isError) return <div>Unable to load escrow.</div>
+if (!getQuery.data) return <div>Unable to load escrow.</div>
 
   const escrow = getQuery.data as any
 const isCreator = escrow.creatorId === currentUserId
+const isBuyer = escrow.buyerId === currentUserId
+const isSeller = escrow.sellerId === currentUserId
+const isParticipant = isCreator || isBuyer || isSeller
+
+// Escrow is complete once both buyer and seller are present
+const isComplete = Boolean(escrow.buyerId && escrow.sellerId)
+
+// ❌ if escrow is complete and current user is not part of it → show empty state
+if (isComplete && !isParticipant) {
+  return <EscrowCompleteEmptyState />
+}
+
 
 // Decide what role to display
 const displayRole = isCreator
@@ -87,40 +102,38 @@ const displayRole = isCreator
     ? "SELLER"
     : "BUYER"
 
-  const needsJoin =
-  !isCreator &&
-    escrow.invitationStatus === "PENDING" &&
-    ((escrow.invitedRole === "BUYER" && !escrow.buyerId) ||
-      (escrow.invitedRole === "SELLER" && !escrow.sellerId))
-
+const needsJoin =
+  !isParticipant &&
+  !isComplete &&
+  escrow.invitationStatus === "PENDING"
       
 
   return (
     <div className="space-y-4">
       {needsJoin ? (
-        <div className="max-w-3xl mx-auto bg-white shadow rounded-lg p-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="font-medium">You have been invited to this escrow</div>
-              <div className="text-sm text-gray-600">
-                Accept to join and start the conversation with your counterparty.
-              </div>
+      <div className="max-w-3xl mx-auto bg-white shadow rounded-lg p-4">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <div className="font-medium">You have been invited to this escrow</div>
+            <div className="text-sm text-gray-600">
+              Accept to join and start the conversation with your counterparty.
             </div>
-            <button
-              className="px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
-              onClick={() => accept.mutate({ escrowId: id })}
-              disabled={accept.isPending}
-            >
-              {accept.isPending ? "Joining…" : "Accept invitation"}
-            </button>
           </div>
-          {accept.isError ? (
-            <div className="text-red-600 text-sm mt-2">
-              Failed to accept. Please try again.
-            </div>
-          ) : null}
+          <button
+            className="px-3 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
+            onClick={() => accept.mutate({ escrowId: id })}
+            disabled={accept.isPending}
+          >
+            {accept.isPending ? "Joining…" : "Accept invitation"}
+          </button>
         </div>
-      ) : null}
+        {accept.isError ? (
+          <div className="text-red-600 text-sm mt-2">
+            Failed to accept. Please try again.
+          </div>
+        ) : null}
+      </div>
+    ) : null}
 
       <EscrowDetail escrow={escrow} displayRole={displayRole} isCreator={isCreator} />
     </div>

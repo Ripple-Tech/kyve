@@ -82,3 +82,43 @@ export function EscrowDetail({ escrow, displayRole, isCreator }: EscrowDetailPro
     </div>
   )
 }
+
+{/*
+ // Secure detail access: old escrow router code
+// Only creator, buyer, or seller can view the escrow at any time.
+// Everyone else (even if logged in) gets FORBIDDEN.
+  getById: protectedProcedure
+    .input(z.object({ id: z.string().min(1) }))
+    .query(async ({ ctx, input }) => {
+      const { db, user } = ctx
+
+      const escrow = await db.escrow.findUnique({
+        where: { id: input.id },
+        include: {
+          buyer: { select: { id: true, name: true, email: true } },
+          seller: { select: { id: true, name: true, email: true } },
+        },
+      })
+
+      if (!escrow) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Escrow not found" })
+      }
+
+      const userId = user!.id
+
+      const isParticipant =
+        escrow.creatorId === user!.id ||
+        escrow.buyerId === user!.id ||
+        escrow.sellerId === user!.id
+
+      // If someone has accepted, let any signed-in user view (temporary)
+      const accepted = escrow.invitationStatus === "ACCEPTED"
+
+      if (!isParticipant && !accepted) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not allowed (temporary gate)" })
+      }
+
+      return escrow
+    }),  
+
+    */}

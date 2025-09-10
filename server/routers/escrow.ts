@@ -133,40 +133,42 @@ export const escrowRouter = router({
       return { success: true }
     }),
 
-  // TEMPORARY relaxed detail access:
-  // - Before anyone accepts: only creator/assigned participants can view
-  // - After accepted: allow any authenticated user to view (very open, per your request)
-  getById: protectedProcedure
-    .input(z.object({ id: z.string().min(1) }))
-    .query(async ({ ctx, input }) => {
-      const { db, user } = ctx
+    // Secure detail access:
+// Only creator, buyer, or seller can view the escrow at any time.
+// Everyone else (even if logged in) gets FORBIDDEN.
+getById: protectedProcedure
+  .input(z.object({ id: z.string().min(1) }))
+  .query(async ({ ctx, input }) => {
+    const { db, user } = ctx
 
-      const escrow = await db.escrow.findUnique({
-        where: { id: input.id },
-        include: {
-          buyer: { select: { id: true, name: true, email: true } },
-          seller: { select: { id: true, name: true, email: true } },
-        },
-      })
+    const escrow = await db.escrow.findUnique({
+      where: { id: input.id },
+      include: {
+        buyer: { select: { id: true, name: true, email: true } },
+        seller: { select: { id: true, name: true, email: true } },
+      },
+    })
 
-      if (!escrow) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Escrow not found" })
-      }
+    if (!escrow) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "Escrow not found" })
+    }
 
-      const isParticipant =
-        escrow.creatorId === user!.id ||
-        escrow.buyerId === user!.id ||
-        escrow.sellerId === user!.id
+    const userId = user!.id
+    const isParticipant =
+      escrow.creatorId === userId ||
+      escrow.buyerId === userId ||
+      escrow.sellerId === userId
 
-      // If someone has accepted, let any signed-in user view (temporary)
-      const accepted = escrow.invitationStatus === "ACCEPTED"
+    if (!isParticipant) {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Not allowed" })
+    }
 
-      if (!isParticipant && !accepted) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Not allowed (temporary gate)" })
-      }
+    return escrow
+  }),
 
-      return escrow
-    }),
+
+
+    
 
   // Dashboard list remains: only your own items
   listMine: protectedProcedure
