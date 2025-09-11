@@ -43,7 +43,7 @@ function CardButton({
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(120px_80px_at_80%_20%,rgba(251,191,36,0.08),transparent_60%),radial-gradient(100px_60px_at_20%_80%,rgba(245,158,11,0.08),transparent_60%)]"
       />
-      <div className="relative flex items-start gap-4">
+      <div className="relative flex flex-col items-center justify-center gap-4">
         {/* Icon circle */}
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 ring-1 ring-amber-400/20">
           <action.icon className="h-6 w-6 text-amber-400" />
@@ -65,8 +65,8 @@ const Transaction = () => {
   return (
     <div className="mx-auto max-w-3xl">
       <div className="mb-4 px-1">
-        <h2 className="text-lg font-semibold text-amber-300">Quick actions</h2>
-        <p className="text-sm text-amber-200/70">Manage your funds</p>
+        <h2 className="text-2xl font-bold text-gray-800">Quick actions</h2>
+        <p className="text-sm text-gold-dark">Manage your funds</p>
       </div>
 
       {/* Grid: 2 cols on mobile, 3 on md+; bigger cards per your request */}
