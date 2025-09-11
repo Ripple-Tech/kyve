@@ -4,7 +4,6 @@ import { QueryClient, dehydrate } from "@tanstack/react-query"
 import { db } from "@/lib/db"
 import getCurrentUser from "@/actions/getCurrentUser"
 import { EscrowGridClient } from "@/app/(dashboard)/dashboard/escrow-grid.client"
-import Transaction from "@/components/dashboard/Transactions"
 
 async function prefetchEscrows(qc: QueryClient, userId: string) {
   const escrows = await db.escrow.findMany({
@@ -36,9 +35,9 @@ export default async function Page() {
   const state = await prefetchEscrows(qc, user.id)
 
   return (
-    <DashboardPage title="Your Escrows" hideBackButton showCreate isDashboard={true}>
+    <DashboardPage title="Your Escrows" hideBackButton showCreate >
       <Hydrate state={state}>
-        <Transaction/>
+        <EscrowGridClient />
       </Hydrate>
     </DashboardPage>
   )

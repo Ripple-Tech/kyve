@@ -35,7 +35,7 @@ export const DashboardPage = ({
   return (
     <section className="flex-1 h-full w-full flex flex-col mb-20">
       {/* HEADER */}
-      <div className="w-full p-6 sm:p-8 flex items-center justify-between border-b border-gray-200">
+      <div className="w-full p-3 sm:p-8 flex items-center justify-between border-b border-gray-200">
         {/* Left side */}
         <div className="flex items-center gap-4">
           {!isDashboard && !hideBackButton && (
@@ -52,10 +52,10 @@ export const DashboardPage = ({
 
           {isDashboard && (
             <div className="mb-2">
-              <h1 className="text-3xl font-heading font-semibold tracking-tight text-grey-400 mb-2">
+              <h1 className="text-3xl font-heading font-semibold tracking-tight text-gray-900 mb-2">
                 Welcome <span className="text-primary">{user?.name}</span>
               </h1>
-              <p className="text-2xl font-heading font-semibold tracking-tight text-grey-600">
+              <p className="text-2xl font-heading font-semibold tracking-tight text-gray-700">
                 Account balance:{" "}{" "}
                 <span className="text-golden-dark">₦ 0.00</span>
               </p>
