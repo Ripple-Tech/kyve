@@ -49,7 +49,7 @@ export const DashboardPage = ({
           {showCreate && (
             <Button
               size="sm"
-              className="bg-amber-700 text-white hover:bg-amber-800"
+              className="bg-primary text-white hover:bg-amber-800"
               onClick={() => setShowCreateModal(true)}
             >
               + Create Escrow

@@ -6,8 +6,8 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { LucidePanelLeftClose } from "lucide-react";
 import { Poppins } from "next/font/google";
-import { Modal } from "./ui/modal";
-import { Separator } from "./ui/separator";
+import { Modal } from "../ui/modal";
+import { Separator } from "../ui/separator";
 import { useSession, signOut } from "next-auth/react";
 
 const poppins = Poppins({

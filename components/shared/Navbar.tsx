@@ -8,7 +8,7 @@ import { useState } from "react"
 import { MenuIcon } from "lucide-react"
 import Image from "next/image"
 import { useSession, signOut } from "next-auth/react";
-import { NavbarSidebar } from "./Navbar-Sidebar"
+import { NavbarSidebar } from "@/components/shared/Navbar-Sidebar"
 import { UserAvatar } from "@/components/UserAvatar"
 
 const poppins = Poppins({
