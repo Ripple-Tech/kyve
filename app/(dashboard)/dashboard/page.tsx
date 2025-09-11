@@ -3,7 +3,6 @@ import { Hydrate } from "@/components/hydrate-client"
 import { QueryClient, dehydrate } from "@tanstack/react-query"
 import { db } from "@/lib/db"
 import getCurrentUser from "@/actions/getCurrentUser"
-import { EscrowGridClient } from "@/app/(dashboard)/dashboard/escrow-grid.client"
 import Transaction from "@/components/dashboard/Transactions"
 
 async function prefetchEscrows(qc: QueryClient, userId: string) {
