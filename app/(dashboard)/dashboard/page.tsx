@@ -1,4 +1,4 @@
-import { DashboardPage } from "@/components/dashboard-page"
+import { DashboardPage } from "@/components/dashboard/dashboard-page"
 import { Hydrate } from "@/components/hydrate-client"
 import { QueryClient, dehydrate } from "@tanstack/react-query"
 import { db } from "@/lib/db"
@@ -35,7 +35,7 @@ export default async function Page() {
   const state = await prefetchEscrows(qc, user.id)
 
   return (
-    <DashboardPage title="Your Escrows" hideBackButton showCreate>
+    <DashboardPage title="Your Escrows" hideBackButton showCreate isDashboard={true}>
       <Hydrate state={state}>
         <EscrowGridClient />
       </Hydrate>

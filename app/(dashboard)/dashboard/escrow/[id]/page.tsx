@@ -1,5 +1,5 @@
 import { db } from "@/lib/db"
-import { DashboardPage } from "@/components/dashboard-page"
+import { DashboardPage } from "@/components/dashboard/dashboard-page"
 import { Hydrate } from "@/components/hydrate-client"
 import { QueryClient, dehydrate } from "@tanstack/react-query"
 import { EscrowDetailClient } from "./escrow-detail.client"
