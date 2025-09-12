@@ -1,4 +1,4 @@
-import HeroForm from "@/components/heroform";
+import HeroForm from "@/components/forms/heroform";
 
 export function EscrowEmpty() {
   return (

@@ -1,5 +1,5 @@
 import Link from "next/link"
-import HeroForm from "./heroform"
+import HeroForm from "./forms/heroform"
 import { Button } from "./ui/button"
 import Image from "next/image"
 import { Star } from "lucide-react"

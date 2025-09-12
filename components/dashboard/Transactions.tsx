@@ -1,7 +1,10 @@
 "use client"
 
+import { useState } from "react"
 import { JSX, SVGProps } from "react"
-import { cn } from "@/lib/utils" // optional helper
+import { cn } from "@/lib/utils"
+import { Modal } from "@/components/ui/modal"
+import { DepositForm } from "@/components/forms/deposit-form"
 
 type Action = {
   key: string
@@ -20,31 +23,22 @@ const actions: Action[] = [
   { key: "swap", label: "Swap", subtitle: "Exchange", icon: SwapIcon },
 ]
 
-function CardButton({
-  action,
-  className,
-}: {
-  action: Action
-  className?: string
-}) {
+function CardButton({ action, className }: { action: Action; className?: string }) {
   return (
     <button
       type="button"
       onClick={action.onClick}
       className={cn(
-        // container
         "relative w-full overflow-hidden rounded-2xl p-5 text-left transition",
         "bg-black border border-amber-700/30 hover:border-amber-500/50",
         "hover:shadow-[0_8px_24px_rgba(251,191,36,0.15)] active:scale-[0.99]"
       )}
     >
-      {/* subtle vignette/gradients for depth */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(120px_80px_at_80%_20%,rgba(251,191,36,0.08),transparent_60%),radial-gradient(100px_60px_at_20%_80%,rgba(245,158,11,0.08),transparent_60%)]"
       />
       <div className="relative flex flex-col items-center justify-center gap-4">
-        {/* Icon circle */}
         <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 ring-1 ring-amber-400/20">
           <action.icon className="h-6 w-6 text-amber-400" />
         </div>
@@ -62,6 +56,12 @@ function CardButton({
 }
 
 const Transaction = () => {
+  const [showDepositModal, setShowDepositModal] = useState(false)
+
+  const enhancedActions: Action[] = actions.map((a) =>
+    a.key === "deposit" ? { ...a, onClick: () => setShowDepositModal(true) } : a
+  )
+
   return (
     <div className="mx-auto max-w-3xl">
       <div className="mb-4 px-1">
@@ -69,12 +69,21 @@ const Transaction = () => {
         <p className="text-sm text-gold-dark">Manage your funds</p>
       </div>
 
-      {/* Grid: 2 cols on mobile, 3 on md+; bigger cards per your request */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-        {actions.map((a) => (
+        {enhancedActions.map((a) => (
           <CardButton key={a.key} action={a} />
         ))}
       </div>
+
+      {/* Deposit modal */}
+      <Modal
+        showModal={showDepositModal}
+        setShowModal={setShowDepositModal}
+        className="max-w-md p-6"
+      >
+        <h2 className="text-lg font-semibold mb-4">Deposit Funds</h2>
+        <DepositForm onSuccess={() => setShowDepositModal(false)} />
+      </Modal>
     </div>
   )
 }

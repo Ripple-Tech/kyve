@@ -7,7 +7,7 @@ import { ArrowLeft, Plus } from "lucide-react"
 import { Heading } from "../heading"
 import { useRouter } from "next/navigation"
 import { Modal } from "../ui/modal"
-import HeroForm from "../heroform"
+import HeroForm from "../forms/heroform"
 
 interface DashboardPageProps {
   title?: string
