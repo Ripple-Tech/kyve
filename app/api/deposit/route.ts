@@ -1,18 +1,14 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 
-// ENV VARS (use exactly as provided)
-const OPaySecret = process.env.OPAY_SECRET_KEY || "";   // e.g., OPAYPRV1757...
-const OPayPublicKey = process.env.OPAY_PUBLIC_KEY || ""; // e.g., OPAYPUB1757...
-const OPayMerchantId = process.env.OPAY_MERCHANT_ID || ""; // e.g., 256625091223939
-
+const OPaySecret = process.env.OPAY_SECRET_KEY || "";     // OPAYPRV...
+const OPayMerchantId = process.env.OPAY_MERCHANT_ID || ""; // e.g. 256625091223939
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 const OPayBaseUrl =
   process.env.NODE_ENV === "production"
     ? "https://api.opaycheckout.com"
     : "https://sandboxapi.opaycheckout.com";
 
-// HMAC helper
 function hmacSha512Hex(data: string, secret: string) {
   return crypto.createHmac("sha512", secret).update(data, "utf8").digest("hex");
 }
@@ -20,29 +16,27 @@ function hmacSha512Hex(data: string, secret: string) {
 type CreatePaymentPayload = {
   country: string;
   reference: string;
-  amount: { currency: string; total: number }; // major units
-  callbackUrl: string;
-  returnUrl: string;
-  cancelUrl: string;
+  amount: { currency: string; total: number }; // total in minor units (cent)
+  callbackUrl?: string;
+  returnUrl?: string;
+  cancelUrl?: string;
   product: { name: string; description: string };
   userInfo: { userName: string; userMobile: string; userEmail: string };
-  userClientIP: string;
-  expireAt: number; // minutes
-  payMethod: string;
-  walletAccount?: string;
+  userClientIP?: string;
+  expireAt?: number; // minutes
+  payMethod: "MWALLET";
+  walletAccount: string;
 };
 
 export async function POST(req: Request) {
   try {
-    // Basic checks
-    if (!OPaySecret || !OPayPublicKey || !OPayMerchantId) {
+    if (!OPaySecret || !OPayMerchantId) {
       return NextResponse.json(
         {
           ok: false,
           message: "Missing OPay credentials",
           needed: {
             hasSecret: Boolean(OPaySecret),
-            hasPublicKey: Boolean(OPayPublicKey),
             hasMerchantId: Boolean(OPayMerchantId),
           },
         },
@@ -50,55 +44,58 @@ export async function POST(req: Request) {
       );
     }
 
-    const client = await req.json().catch(() => ({}));
-    const amount = Number(client?.amount);
+    const client = await req.json().catch(() => ({} as any));
+    const amount = Number(client?.amount); // amount in major units from client (e.g., 400.00)
+    const walletAccount = String(client?.walletAccount || "01066668888"); // must be 11-digit for EG; for NG, use valid number
+    const currency = String(client?.currency || "NGN"); // Use "EGP" if you are testing EG doc
+    const country = String(client?.country || "NG"); // "EG" per doc, or "NG" for Nigeria
+    const userMobile = String(client?.userMobile || "08000000000");
+    const userEmail = String(client?.userEmail || "customer@example.com");
+    const userName = String(client?.userName || "OPay Test Name");
 
     if (!Number.isFinite(amount) || amount <= 0) {
       return NextResponse.json({ ok: false, message: "Invalid amount" }, { status: 400 });
     }
 
-    // Build payload
+    // According to doc: amount.total is in cent unit (minor unit)
+    const amountInCents = Math.round(amount * 100);
+
     const payload: CreatePaymentPayload = {
-      country: "NG",
+      country, // e.g., "EG" in the doc; make sure it matches the wallet account/currency region
       reference: `DEP_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
       amount: {
-        currency: "NGN",
-        total: Math.round((amount + Number.EPSILON) * 100) / 100, // major units, 2dp
+        currency, // e.g., "EGP" per doc or "NGN" for Nigeria products
+        total: amountInCents,
       },
       callbackUrl: `${APP_URL}/api/opay/webhook`,
       returnUrl: `${APP_URL}/payment/success`,
       cancelUrl: `${APP_URL}/payment/cancel`,
-      product: { name: "Wallet Deposit", description: "Deposit into wallet" },
+      product: {
+        name: "Wallet Deposit",
+        description: "Deposit into wallet",
+      },
       userInfo: {
-        userName: "Customer",
-        userMobile: "08000000000",
-        userEmail: "customer@example.com",
+        userName,
+        userMobile,
+        userEmail,
       },
       userClientIP: "127.0.0.1",
       expireAt: 30,
       payMethod: "MWALLET",
-      walletAccount: "08060122245",
+      walletAccount,
     };
 
     const url = `${OPayBaseUrl}/api/v1/international/payment/create`;
+    // Important: The doc examples sign the exact JSON string (no extra spaces). We’ll stringify once.
     const rawBody = JSON.stringify(payload);
 
-    // Auth headers
-    const timestamp = Date.now().toString(); // unix millis
-    const nonce = crypto.randomBytes(12).toString("hex");
-
-    // Signature = HMAC_SHA512(rawBody + timestamp + nonce, SECRET)
-    const stringToSign = rawBody + timestamp + nonce;
-    const signature = hmacSha512Hex(stringToSign, OPaySecret);
+    // Signature = HMAC_SHA512(rawBody, PRIVATE_KEY)
+    const signature = hmacSha512Hex(rawBody, OPaySecret);
 
     const headers: Record<string, string> = {
-      "Content-Type": "application/json; charset=utf-8",
-      Accept: "application/json",
-      Authorization: `Bearer ${OPayPublicKey}`,
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${signature}`, // per doc
       MerchantId: OPayMerchantId,
-      Timestamp: timestamp,
-      Nonce: nonce,
-      Signature: signature,
     };
 
     const resp = await fetch(url, {
@@ -115,14 +112,17 @@ export async function POST(req: Request) {
       data = { rawResponse: text };
     }
 
-    // Success code for OPay is usually "00000"
-    if (resp.ok && data && data.code === "00000") {
+    // Expect code "00000" on success
+    if (resp.ok && data?.code === "00000") {
+      // data.data.nextAction may include SCAN_QR_CODE or a QR image/base64
       return NextResponse.json({
         ok: true,
-        reference: payload.reference,
+        reference: data?.data?.reference || payload.reference,
         orderNo: data?.data?.orderNo,
         status: data?.data?.status,
-        data: data.data,
+        nextAction: data?.data?.nextAction,
+        amount: data?.data?.amount,
+        data: data?.data,
       });
     }
 
