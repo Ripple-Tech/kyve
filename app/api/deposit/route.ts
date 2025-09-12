@@ -1,194 +1,145 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 
-const OPaySecret = process.env.OPAY_SECRET_KEY || "";
-const OPayMerchantId = process.env.OPAY_MERCHANT_ID || "";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "";
+// ENV VARS (use exactly as provided)
+const OPaySecret = process.env.OPAY_SECRET_KEY || "";   // e.g., OPAYPRV1757...
+const OPayPublicKey = process.env.OPAY_PUBLIC_KEY || ""; // e.g., OPAYPUB1757...
+const OPayMerchantId = process.env.OPAY_MERCHANT_ID || ""; // e.g., 256625091223939
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 const OPayBaseUrl =
   process.env.NODE_ENV === "production"
     ? "https://api.opaycheckout.com"
     : "https://sandboxapi.opaycheckout.com";
 
-function assertEnv() {
-  const missing: string[] = [];
-  if (!OPaySecret) missing.push("OPAY_SECRET_KEY");
-  if (!OPayMerchantId) missing.push("OPAY_MERCHANT_ID");
-  if (!APP_URL) missing.push("NEXT_PUBLIC_APP_URL");
-  if (missing.length) throw new Error(`Missing env(s): ${missing.join(", ")}`);
-}
-
-function hmacSha512(rawBody: string, secret: string) {
-  return crypto.createHmac("sha512", secret).update(rawBody).digest("hex");
+// HMAC helper
+function hmacSha512Hex(data: string, secret: string) {
+  return crypto.createHmac("sha512", secret).update(data, "utf8").digest("hex");
 }
 
 type CreatePaymentPayload = {
-  country: "NG";
+  country: string;
   reference: string;
-  amount: { currency: "NGN"; total: number };
-  callbackUrl?: string;
+  amount: { currency: string; total: number }; // major units
+  callbackUrl: string;
+  returnUrl: string;
+  cancelUrl: string;
   product: { name: string; description: string };
-  productList?: Array<{
-    productId?: string;
-    name?: string;
-    description?: string;
-    price?: number;
-    quantity?: number;
-    imageUrl?: string;
-  }>;
-  userInfo?: {
-    userName: string;
-    userMobile: string; // MSISDN; can be +234... or local 0XXXXXXXXXX
-    userEmail: string;
-  };
-  userClientIP?: string;
-  expireAt?: number;
-  payMethod: "MWALLET" | "QR";
-  walletAccount?: string; // required for MWALLET (payer's wallet phone number)
+  userInfo: { userName: string; userMobile: string; userEmail: string };
+  userClientIP: string;
+  expireAt: number; // minutes
+  payMethod: string;
+  walletAccount?: string;
 };
-
-function normalizeNgMsisdn(input: string): string {
-  // Accept +234XXXXXXXXXX or 234XXXXXXXXXX or 0XXXXXXXXXX and return local 0XXXXXXXXXX
-  const digits = input.replace(/[^\d]/g, "");
-  if (digits.startsWith("234") && digits.length === 13) {
-    return "0" + digits.slice(3);
-  }
-  if (digits.length === 11 && digits.startsWith("0")) {
-    return digits;
-  }
-  return input; // leave as-is; OPay may accept MSISDN format for some tenants
-}
-
-function isLikelyNgLocalMobile(input: string): boolean {
-  return /^0\d{10}$/.test(input);
-}
 
 export async function POST(req: Request) {
   try {
-    assertEnv();
+    // Basic checks
+    if (!OPaySecret || !OPayPublicKey || !OPayMerchantId) {
+      return NextResponse.json(
+        {
+          ok: false,
+          message: "Missing OPay credentials",
+          needed: {
+            hasSecret: Boolean(OPaySecret),
+            hasPublicKey: Boolean(OPayPublicKey),
+            hasMerchantId: Boolean(OPayMerchantId),
+          },
+        },
+        { status: 500 }
+      );
+    }
 
-    // Expected JSON body examples:
-    // - MWALLET: { amount: 500, payMethod: "MWALLET", walletAccount: "08012345678", userName?, userEmail?, userMobile? }
-    // - QR:      { amount: 500, payMethod: "QR" }
-    const client = await req.json().catch(() => ({} as any));
+    const client = await req.json().catch(() => ({}));
     const amount = Number(client?.amount);
+
     if (!Number.isFinite(amount) || amount <= 0) {
-      return NextResponse.json({ message: "Invalid amount" }, { status: 400 });
+      return NextResponse.json({ ok: false, message: "Invalid amount" }, { status: 400 });
     }
 
-    const payMethod: CreatePaymentPayload["payMethod"] =
-      client?.payMethod === "QR" ? "QR" : "MWALLET";
-
-    // Nigeria defaults
-    const country: CreatePaymentPayload["country"] = "NG";
-    const currency: CreatePaymentPayload["amount"]["currency"] = "NGN";
-
-    let walletAccount: string | undefined =
-      payMethod === "MWALLET" ? client?.walletAccount || "08060122245" : undefined;
-
-    if (payMethod === "MWALLET") {
-      if (!walletAccount) {
-        return NextResponse.json(
-          { message: "walletAccount (payer's wallet phone number) is required for MWALLET" },
-          { status: 400 }
-        );
-      }
-      walletAccount = normalizeNgMsisdn(walletAccount);
-      // Most NG integrations expect local 0XXXXXXXXXX; adjust if your OPay tenant requires +234 format.
-      if (!isLikelyNgLocalMobile(walletAccount)) {
-        return NextResponse.json(
-          { message: "walletAccount must be a Nigerian mobile in local format, e.g., 08012345678" },
-          { status: 400 }
-        );
-      }
-    }
-
-    const reference = client?.reference?.toString() || `DEP_${Date.now()}`;
-    const callbackUrl = `${APP_URL.replace(/\/$/, "")}/api/opay/webhook`;
-
+    // Build payload
     const payload: CreatePaymentPayload = {
-      country,
-      reference,
-      amount: { currency, total: amount },
-      callbackUrl,
-      product: {
-        name: client?.productName || "Wallet Deposit",
-        description: client?.productDescription || "Deposit into wallet",
+      country: "NG",
+      reference: `DEP_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+      amount: {
+        currency: "NGN",
+        total: Math.round((amount + Number.EPSILON) * 100) / 100, // major units, 2dp
       },
+      callbackUrl: `${APP_URL}/api/opay/webhook`,
+      returnUrl: `${APP_URL}/payment/success`,
+      cancelUrl: `${APP_URL}/payment/cancel`,
+      product: { name: "Wallet Deposit", description: "Deposit into wallet" },
       userInfo: {
-        userName: client?.userName || "NG User",
-        // Keep a userMobile for your records; not the same as walletAccount necessarily.
-        userMobile: normalizeNgMsisdn(String(client?.userMobile || "08000000000")),
-        userEmail: client?.userEmail || "customer@email.com",
+        userName: "Customer",
+        userMobile: "08000000000",
+        userEmail: "customer@example.com",
       },
-      userClientIP: client?.userClientIP || "127.0.0.1",
-      expireAt: Number.isFinite(client?.expireAt) ? Number(client?.expireAt) : 30,
-      payMethod,
-      ...(payMethod === "MWALLET" ? { walletAccount } : {}),
+      userClientIP: "127.0.0.1",
+      expireAt: 30,
+      payMethod: "MWALLET",
+      walletAccount: "08060122245",
     };
 
-    const requestPath = "/api/v1/international/payment/create";
-    const url = `${OPayBaseUrl}${requestPath}`;
-
+    const url = `${OPayBaseUrl}/api/v1/international/payment/create`;
     const rawBody = JSON.stringify(payload);
-    const signature = hmacSha512(rawBody, OPaySecret);
+
+    // Auth headers
+    const timestamp = Date.now().toString(); // unix millis
+    const nonce = crypto.randomBytes(12).toString("hex");
+
+    // Signature = HMAC_SHA512(rawBody + timestamp + nonce, SECRET)
+    const stringToSign = rawBody + timestamp + nonce;
+    const signature = hmacSha512Hex(stringToSign, OPaySecret);
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json; charset=utf-8",
+      Accept: "application/json",
+      Authorization: `Bearer ${OPayPublicKey}`,
+      MerchantId: OPayMerchantId,
+      Timestamp: timestamp,
+      Nonce: nonce,
+      Signature: signature,
+    };
 
     const resp = await fetch(url, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${signature}`,
-        MerchantId: OPayMerchantId,
-      },
+      headers,
       body: rawBody,
     });
 
     const text = await resp.text();
-    let data: any = null;
+    let data: any;
     try {
       data = JSON.parse(text);
     } catch {
-      // non-JSON response
+      data = { rawResponse: text };
     }
 
+    // Success code for OPay is usually "00000"
     if (resp.ok && data && data.code === "00000") {
-      // For QR: data.data.nextAction.actionType === "SCAN_QR_CODE"
-      // For MWALLET: status likely PENDING; confirm via webhook at callbackUrl
-      return NextResponse.json(
-        {
-          ok: true,
-          reference,
-          orderNo: data?.data?.orderNo,
-          status: data?.data?.status,
-          nextAction: data?.data?.nextAction || null,
-          opay: data,
-        },
-        { status: 200 }
-      );
+      return NextResponse.json({
+        ok: true,
+        reference: payload.reference,
+        orderNo: data?.data?.orderNo,
+        status: data?.data?.status,
+        data: data.data,
+      });
     }
 
     return NextResponse.json(
       {
         ok: false,
-        message: "Opay init failed",
+        message: "OPay request failed",
         httpStatus: resp.status,
-        opay: data ?? text,
-        sent: {
-          env: process.env.NODE_ENV,
-          baseUrl: OPayBaseUrl,
-          path: requestPath,
-          headers: {
-            MerchantId: OPayMerchantId,
-            Authorization: "Bearer <HMAC_SHA512(body)>",
-          },
-          payload,
-        },
+        opayCode: data?.code,
+        opayMessage: data?.message,
+        data,
       },
-      { status: 502 }
+      { status: resp.status || 400 }
     );
   } catch (err: any) {
     return NextResponse.json(
-      { ok: false, message: "Server error", error: String(err?.message || err) },
+      { ok: false, message: "Server error", error: err?.message || String(err) },
       { status: 500 }
     );
   }
