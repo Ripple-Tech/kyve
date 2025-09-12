@@ -1,124 +1,141 @@
-import { NextResponse } from "next/server"
-import { db } from "@/lib/db"
-import getCurrentUser from "@/actions/getCurrentUser"
-import crypto from "crypto"
+import { NextResponse } from "next/server";
+import crypto from "crypto";
 
-const OPaySecret = process.env.OPAY_SECRET_KEY!  // ✅ or hardcode here for testing
-const OPayMerchantId = process.env.OPAY_MERCHANT_ID!
+const OPaySecret = process.env.OPAY_SECRET_KEY || "";
+const OPayMerchantId = process.env.OPAY_MERCHANT_ID || "";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "";
 
-// Generate OPay signature (HMAC-SHA512) using RAW payload (unsorted)
-function generateOpaySignature(
-  payload: any,
-  secretKey: string,
-  requestPath: string,
-  httpMethod: string = "POST"
-): string {
-  const payloadStr = JSON.stringify(payload) // ✅ raw, no sorting
-  const stringToSign = `${httpMethod}${requestPath}${payloadStr}`
-
-  console.log("=== OPay Debug ===")
-  console.log("Payload:", payloadStr)
-  console.log("StringToSign:", stringToSign)
-
-  const hmac = crypto.createHmac("sha512", secretKey)
-  hmac.update(stringToSign)
-  const signature = hmac.digest("hex")
-
-  console.log("Signature:", signature)
-  console.log("==================")
-
-  return signature
-}
-
-// Sandbox vs Production
+// Choose base URL by environment
 const OPayBaseUrl =
   process.env.NODE_ENV === "production"
-    ? "https://api.opaycheckout.com"
-    : "https://sandboxapi.opaycheckout.com"
+    ? "https://cashierapi.opayweb.com"
+    : "https://sandbox.cashierapi.opayweb.com";
+
+function assertEnv() {
+  const missing: string[] = [];
+  if (!OPaySecret) missing.push("OPAY_SECRET_KEY");
+  if (!OPayMerchantId) missing.push("OPAY_MERCHANT_ID");
+  if (!APP_URL) missing.push("NEXT_PUBLIC_APP_URL");
+  if (missing.length) {
+    throw new Error(`Missing env(s): ${missing.join(", ")}`);
+  }
+}
+
+// Simplified buildAuthorization: HMAC of body only, common for OPay integrations
+function buildAuthorization(options: {
+  rawBody: string;
+  secret: string;
+}) {
+  const { rawBody, secret } = options;
+  const stringToSign = rawBody;
+  const signature = crypto.createHmac("sha512", secret).update(stringToSign).digest("hex");
+  return { authorization: `Bearer ${OPayMerchantId} ${signature}`, stringToSign };
+}
+
+type CreatePaymentPayload = {
+  amount: { currency: "NGN"; total: number };
+  callbackUrl: string;
+  country: "NG";
+  expireAt?: number;
+  payMethod?: "CARD" | "BANK_TRANSFER" | "QR" | "MWALLET";
+  product: { description: string; name: string };
+  reference: string;
+  userClientIP?: string;
+  userInfo?: { userEmail?: string; userMobile?: string; userName?: string };
+};
 
 export async function POST(req: Request) {
   try {
-    const user = await getCurrentUser()
-    if (!user) {
-      return NextResponse.json({ message: "Unauthorized" }, { status: 401 })
+    assertEnv();
+
+    const input = await req.json().catch(() => ({}));
+    const amount = Number(input?.amount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      return NextResponse.json({ message: "Invalid amount" }, { status: 400 });
     }
 
-    const { amount } = await req.json()
-    const reference = `DEP_${user.id}_${Date.now()}`
+    const requestPath = "/api/v1/international/cashier/create";
+    const reference = `DEP_${Date.now()}`;
 
-    // Save transaction as pending in DB
-    await db.transaction.create({
-      data: {
-        userId: user.id,
-        amount,
-        type: "DEPOSIT",
-        reference,
-        currency: "NGN",
-        status: "PENDING",
-      },
-    })
+    const callbackUrl = `${APP_URL.replace(/\/$/, "")}/api/opay/webhook`;
 
-    // Build Opay payload
-    const payload = {
-      amount: {
-        currency: "NGN",
-        total: amount,
-      },
-      callbackUrl: `${process.env.NEXT_PUBLIC_APP_URL}/api/opay/webhook`,
+    const payload: CreatePaymentPayload = {
+      amount: { currency: "NGN", total: amount },
+      callbackUrl,
       country: "NG",
       expireAt: 30,
       payMethod: "MWALLET",
-      product: {
-        description: "Deposit into escrow wallet",
-        name: "Wallet Deposit",
-      },
+      product: { description: "Deposit into escrow wallet", name: "Wallet Deposit" },
       reference,
       userClientIP: "127.0.0.1",
       userInfo: {
-        userEmail: user.email ?? "test@example.com",
-        userMobile: (user as any).phone ?? "0000000000",
-        userName: user.name ?? "Anonymous",
+        userEmail: "test@example.com",
+        userMobile: "0000000000",
+        userName: "Anonymous",
       },
+    };
+
+    // Exact JSON string that will be sent and signed
+    const rawBody = JSON.stringify(payload);
+
+    const { authorization } = buildAuthorization({
+      rawBody,
+      secret: OPaySecret,
+    });
+
+    const url = `${OPayBaseUrl}${requestPath}`;
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+        Authorization: authorization,
+        MerchantId: OPayMerchantId,
+      },
+      body: rawBody,
+    });
+
+    const text = await resp.text();
+    let data: any = null;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      // not JSON
     }
 
-    // Generate signature (unsorted)
-    const signature = generateOpaySignature(
-      payload,
-      OPaySecret,
-      "/api/v1/international/payment/create",
-      "POST"
-    )
+    if (resp.ok && data && data.code === "00000") {
+      return NextResponse.json({
+        reference,
+        paymentUrl: data.data?.cashierUrl || data.data?.link,
+        opay: data,
+      });
+    }
 
-    // Call Opay API
-    const resp = await fetch(
-      `${OPayBaseUrl}/api/v1/international/payment/create`,
+    // If OPay is rejecting due to signature format, surface all info needed to adjust quickly.
+    return NextResponse.json(
       {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: signature,
-          MerchantId: OPayMerchantId,
+        message: "Opay init failed",
+        opayStatus: resp.status,
+        opayRaw: text,
+        sent: {
+          env: process.env.NODE_ENV,
+          baseUrl: OPayBaseUrl,
+          path: requestPath,
+          headers: {
+            MerchantId: OPayMerchantId,
+            AuthorizationPrefix: authorization.split(" ")[0], // Bearer
+          },
+          payload,
         },
-        body: JSON.stringify(payload),
-      }
-    )
-
-    const data = await resp.json()
-    console.log("OPAY response:", JSON.stringify(data, null, 2))
-
-    if (!resp.ok || data.code !== "00000") {
-      console.error("Opay init error", data)
-      return NextResponse.json(
-        { message: "Opay init failed", details: data },
-        { status: 500 }
-      )
-    }
-
-    return NextResponse.json({
-      paymentUrl: data.data?.cashierUrl || data.data?.link,
-    })
-  } catch (error: any) {
-    console.error("Deposit API error", error)
-    return NextResponse.json({ message: "Server error" }, { status: 500 })
+      },
+      { status: 502 }
+    );
+  } catch (err: any) {
+    return NextResponse.json(
+      {
+        message: "Server error",
+        error: String(err?.message || err),
+      },
+      { status: 500 }
+    );
   }
 }
