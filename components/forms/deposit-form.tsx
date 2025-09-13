@@ -35,7 +35,7 @@ export function DepositForm({ onSuccess }: { onSuccess: () => void }) {
     setError(null)
     startTransition(async () => {
       try {
-        const res = await fetch("/api/paystack/initialize", {
+        const res = await fetch("/api/flutterwave/initialize", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(values),
