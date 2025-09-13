@@ -12,6 +12,8 @@ export const publicRoutes = [
      "/help",
     "/terms",
     "/api/paystack/webhook",
+    "/api/paystack-callback",
+    "/api/flutterwave/webhook",
     //"/search",
     "/sitemap",
     "/sitemap.xml",
