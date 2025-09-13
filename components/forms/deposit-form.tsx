@@ -67,8 +67,19 @@ export function DepositForm({ onSuccess, paymentMethod }: { onSuccess: () => voi
               <Input
                 type="number"
                 placeholder="1000"
+                min="100"
+                step="1"
                 {...field}
-                onChange={(e) => field.onChange(Number(e.target.value))}
+                onChange={(e) => {
+                  const value = e.target.value;
+
+                  // Allow empty input and valid numeric values
+                  if (value === '' || /^[0-9]*$/.test(value)) {
+                    field.onChange(value ? Number(value) : 0); // Convert to number or set to 0
+                  }
+                }}
+                // Add this to prevent showing leading zeros
+                onFocus={(e) => e.target.select()} // Select the input text on focus
               />
               <FormMessage />
             </FormItem>

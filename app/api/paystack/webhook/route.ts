@@ -57,9 +57,9 @@ export async function POST(req: NextRequest) {
       }
 
       // Amount consistency check
-      const expectedKobo = Math.round(tx.amount * 100);
-      if (typeof paidAmountKobo === "number" && paidAmountKobo !== expectedKobo) {
-        console.warn(`Amount mismatch for ${ref}. expected=${expectedKobo} got=${paidAmountKobo}`);
+      const expectedNaira = Math.round(tx.amount );
+      if (typeof paidAmountKobo === "number" && paidAmountKobo !== expectedNaira) {
+        console.warn(`Amount mismatch for ${ref}. expected=${expectedNaira} got=${paidAmountKobo}`);
         return NextResponse.json({ error: "amount mismatch" }, { status: 400 });
       }
 
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
         });
         if (!user) throw new Error("User not found for transaction " + ref);
 
-        const increment = expectedKobo; // or paidAmountKobo if you trust Paystack amount
+        const increment = expectedNaira; // or paidAmountKobo if you trust Paystack amount
         await txdb.user.update({
           where: { id: user.id },
           data: { balance: (user.balance ?? 0) + increment },

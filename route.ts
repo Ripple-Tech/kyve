@@ -13,7 +13,7 @@ export const publicRoutes = [
     "/terms",
     "/api/paystack/webhook",
     "/api/paystack-callback",
-    "/api/flutterwave/weebhook",
+    "/api/flutterwave/webhook",
     //"/search",
     "/sitemap",
     "/sitemap.xml",
