@@ -7,10 +7,11 @@ import { revalidatePath } from "next/cache"
 export async function POST(req: NextRequest) {
   try {
     const rawBody = await req.text()
-    const signature = req.headers.get("verif-hash")
+    const signature = req.headers.get("verif-hash") // Flutterwave sends this
 
     // (1) Verify signature
     if (!signature || signature !== process.env.FLUTTERWAVE_SECRET_HASH) {
+      console.error("❌ Invalid signature", { signature })
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
     }
 
@@ -39,7 +40,6 @@ export async function POST(req: NextRequest) {
         data: { status: "SUCCESS" },
       })
 
-      // Update user balance (amount is float, balance is int in kobo or naira)
       const user = await db.user.findUnique({ where: { id: transaction.userId } })
       if (user) {
         const newBalance = user.balance + Math.floor(transaction.amount)

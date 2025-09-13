@@ -23,7 +23,7 @@ const schema = z.object({
 
 type Values = z.infer<typeof schema>
 
-export function DepositForm({ onSuccess }: { onSuccess: () => void }) {
+export function DepositForm({ onSuccess, paymentMethod }: { onSuccess: () => void; paymentMethod: string | null }) {
   const [isPending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
   const form = useForm<Values>({
@@ -35,7 +35,8 @@ export function DepositForm({ onSuccess }: { onSuccess: () => void }) {
     setError(null)
     startTransition(async () => {
       try {
-        const res = await fetch("/api/flutterwave/initialize", {
+        const endpoint = paymentMethod === "paystack" ? "/api/paystack/initialize" : "/api/flutterwave/initialize";
+        const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(values),
@@ -46,7 +47,7 @@ export function DepositForm({ onSuccess }: { onSuccess: () => void }) {
           return
         }
         onSuccess()
-        // Redirect to Opay payment page
+        // Redirect to payment page
         window.location.href = data.paymentUrl
       } catch {
         setError("Unexpected error, please try again")

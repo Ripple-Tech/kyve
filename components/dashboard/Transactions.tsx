@@ -57,9 +57,13 @@ function CardButton({ action, className }: { action: Action; className?: string 
 
 const Transaction = () => {
   const [showDepositModal, setShowDepositModal] = useState(false)
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null)
 
   const enhancedActions: Action[] = actions.map((a) =>
-    a.key === "deposit" ? { ...a, onClick: () => setShowDepositModal(true) } : a
+    a.key === "deposit" ? {
+      ...a,
+      onClick: () => setShowDepositModal(true)
+    } : a
   )
 
   return (
@@ -81,14 +85,41 @@ const Transaction = () => {
         setShowModal={setShowDepositModal}
         className="max-w-md p-6"
       >
-        <h2 className="text-lg font-semibold mb-4">Deposit Funds</h2>
-        <DepositForm onSuccess={() => setShowDepositModal(false)} />
+        <h2 className="text-lg font-semibold mb-4">Select Payment Method</h2>
+        <div className="flex flex-col space-y-2">
+          <button
+            className={cn("border p-2 rounded", selectedPaymentMethod === "paystack" && "bg-amber-200")}
+            onClick={() => {
+              setSelectedPaymentMethod("paystack")
+            }}
+          >
+            Paystack
+          </button>
+          <button
+            className={cn("border p-2 rounded", selectedPaymentMethod === "flutterwave" && "bg-amber-200")}
+            onClick={() => {
+              setSelectedPaymentMethod("flutterwave")
+            }}
+          >
+            Flutterwave
+          </button>
+        </div>
+        {selectedPaymentMethod && (
+          <p className="mt-4 text-sm text-gray-600">
+            Selected Payment Method: {selectedPaymentMethod === "paystack" ? "Paystack" : "Flutterwave"}
+          </p>
+        )}
+        <DepositForm 
+          onSuccess={() => setShowDepositModal(false)} 
+          paymentMethod={selectedPaymentMethod} 
+        />
       </Modal>
     </div>
   )
 }
 
 export default Transaction
+
 
 /* ------------------ ICONS (amber on black; currentColor = amber) ------------------ */
 /* All SVGs use the SVG namespace: http://www.w3.org/2000/svg */
