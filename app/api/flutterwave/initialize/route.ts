@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
         tx_ref: reference,
         amount: amount,
         currency: "NGN",
-        redirect_url: `${process.env.NEXT_PUBLIC_APP_URL}/payment/success`,
+        redirect_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/payment-success`,
         customer: {
           email: user.email,
           name: user.name ?? "Anonymous",
