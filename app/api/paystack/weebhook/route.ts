@@ -20,14 +20,42 @@ export async function POST(req: NextRequest) {
 
     const event = JSON.parse(rawBody)
 
+    // Handle successful payment
     if (event.event === "charge.success") {
       const reference = event.data.reference
 
+      const transaction = await db.transaction.findUnique({
+        where: { reference },
+      })
+
+      if (!transaction) {
+        return NextResponse.json({ error: "Transaction not found" }, { status: 404 })
+      }
+
+      // (2) Update transaction status
       await db.transaction.update({
         where: { reference },
         data: { status: "SUCCESS" },
       })
-    } else if (event.event === "charge.failed") {
+
+      // (3) Update user balance
+      const user = await db.user.findUnique({
+        where: { id: transaction.userId },
+      })
+
+      if (user) {
+        const currentBalance = parseFloat(user.balance ?? "0.00")
+        const newBalance = currentBalance + transaction.amount
+
+        await db.user.update({
+          where: { id: user.id },
+          data: { balance: newBalance.toFixed(2) },
+        })
+      }
+    }
+
+    // Handle failed payments
+    else if (event.event === "charge.failed") {
       const reference = event.data.reference
 
       await db.transaction.update({
