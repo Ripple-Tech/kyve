@@ -57,7 +57,7 @@ export const DashboardPage = ({
               </h1>
               <p className="text-2xl font-heading font-semibold tracking-tight text-gray-700">
                 Account balance:{" "}{" "}
-                <span className="text-golden-dark">₦ 0.00</span>
+                <span className="text-golden-dark">{user?.balance}</span>
               </p>
             </div>
           )}

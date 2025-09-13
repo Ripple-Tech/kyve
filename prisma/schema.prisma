@@ -50,7 +50,7 @@ model User {
   sellerEscrows   Escrow[] @relation("SellerEscrows")
   accounts      Account[]
   transactions  Transaction[]
-  balance       String? @default("0.00")
+  balance       String @default("0.00")
   isTwoFactorEnabled Boolean @default(false)
   twoFactorConfirmation TwoFactorConfirmation? 
   createdAt DateTime @default(now())
