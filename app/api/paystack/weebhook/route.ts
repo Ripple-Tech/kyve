@@ -16,22 +16,28 @@ export async function POST(req: NextRequest) {
       .digest("hex")
 
     if (hash !== signature) {
+      console.error("❌ Invalid signature")
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
     }
 
     const event = JSON.parse(rawBody)
+    console.log("📩 Incoming Paystack Event:", event)
 
     // Handle successful payment
     if (event.event === "charge.success") {
       const reference = event.data.reference
+      console.log("✅ Charge Success for Reference:", reference)
 
       const transaction = await db.transaction.findUnique({
         where: { reference },
       })
 
       if (!transaction) {
+        console.error("❌ Transaction not found for reference:", reference)
         return NextResponse.json({ error: "Transaction not found" }, { status: 404 })
       }
+
+      console.log("📦 Transaction from DB:", transaction)
 
       // (2) Update transaction status
       await db.transaction.update({
@@ -45,20 +51,27 @@ export async function POST(req: NextRequest) {
       })
 
       if (user) {
-        const currentBalance = parseFloat(user.balance ?? "0.00")
-        const newBalance = currentBalance + transaction.amount
+        console.log("👤 User before update:", user)
 
-        await db.user.update({
+        const currentBalance = user.balance ?? 0
+        const newBalance = currentBalance + Math.round(transaction.amount * 100) 
+        // 👆 store in kobo
+
+        const updatedUser = await db.user.update({
           where: { id: user.id },
-          data: { balance: newBalance.toFixed(2) },
+          data: { balance: newBalance },
         })
+
+        console.log("💰 User after update:", updatedUser)
       }
+
       revalidatePath("/dashboard")
     }
 
     // Handle failed payments
     else if (event.event === "charge.failed") {
       const reference = event.data.reference
+      console.log("❌ Charge Failed for Reference:", reference)
 
       await db.transaction.update({
         where: { reference },
@@ -68,7 +81,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true }, { status: 200 })
   } catch (err) {
-    console.error(err)
+    console.error("🚨 Webhook error:", err)
     return NextResponse.json({ error: "Webhook error" }, { status: 500 })
   }
 }
