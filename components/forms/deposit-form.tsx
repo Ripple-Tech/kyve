@@ -17,7 +17,7 @@ import {
 const schema = z.object({
   amount: z
     .number({ error: "Enter a valid number" })
-    .min(500, "Minimum deposit is ₦500")
+    .min(100, "Minimum deposit is ₦100")
     .max(1_000_000, "Maximum deposit is ₦1,000,000"),
 })
 
@@ -35,7 +35,7 @@ export function DepositForm({ onSuccess }: { onSuccess: () => void }) {
     setError(null)
     startTransition(async () => {
       try {
-        const res = await fetch("/api/deposit", {
+        const res = await fetch("/api/paystack/initialize", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(values),
