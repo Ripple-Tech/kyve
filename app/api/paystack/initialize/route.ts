@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        email: "user@example.com", // get from user
+        email: user?.email, 
         amount: amount * 100, // Paystack expects kobo
         reference,
         callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/payment/success`, // optional

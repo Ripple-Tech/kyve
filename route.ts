@@ -11,7 +11,7 @@ export const publicRoutes = [
      "/about",
      "/help",
     "/terms",
-    
+    "/api/paystack/webhook",
     //"/search",
     "/sitemap",
     "/sitemap.xml",
