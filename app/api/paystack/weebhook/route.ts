@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/db"
 import crypto from "crypto"
+import { revalidatePath } from "next/cache"
 
 export async function POST(req: NextRequest) {
   try {
@@ -52,6 +53,7 @@ export async function POST(req: NextRequest) {
           data: { balance: newBalance.toFixed(2) },
         })
       }
+      revalidatePath("/dashboard")
     }
 
     // Handle failed payments
