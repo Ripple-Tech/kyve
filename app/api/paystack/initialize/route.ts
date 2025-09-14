@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         email: user?.email, 
         amount: amount * 100, // Paystack expects kobo
         reference,
-        callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/payment-success`, 
+        callback_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/payment-success`, // optional
       }),
     })
 
